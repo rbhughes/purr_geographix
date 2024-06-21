@@ -1,12 +1,7 @@
 from sqlalchemy.orm import Session
-from fastapi import Depends
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy import text
 from typing import List
-# import uuid
-from purr_geographix.api_modules.database import get_db
-
-
 import purr_geographix.api_modules.schemas as schemas
 import purr_geographix.api_modules.models as models
 
@@ -42,6 +37,18 @@ def get_setup(db: Session):
 
 
 def update_file_depot(db: Session, file_depot: str):
+    """
+    Update the value of setup.file_depot in the setup table. Files generated
+    by asset queries are stored in this directory.
+
+    Args:
+        db: The database session
+        file_depot: Directoroy path used to store file output
+
+    Returns:
+        The newly saved file_depot string
+
+    """
     existing_file_depot = db.execute(text("SELECT COUNT(*) FROM setup")).scalar()
 
     if existing_file_depot == 0:
@@ -55,11 +62,18 @@ def update_file_depot(db: Session, file_depot: str):
     return schemas.Setup(file_depot=result[0] if result else None)
 
 
-# def get_repos(db: Session, skip: int = 0, limit: int = 100):
-#     return db.query(models.Repo).offset(skip).limit(limit).all()
-
 
 def upsert_repos(db, repos: List[models.Repo]):
+    """
+    Upserts (insert or update) a list of repositories in the database.
+
+    Args:
+        db: The database session. NOTE: it's not the context form!
+        repos: A list of repository models to upsert.
+
+    Returns:
+        A list of updated repository models.
+    """
     stmt = insert(models.Repo).values(repos)
 
     update_dict = {c.name: c for c in stmt.excluded if c.name != 'id'}

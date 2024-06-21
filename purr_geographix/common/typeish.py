@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Any, Optional
+from typing import List, Optional
 from datetime import datetime
 
 
@@ -20,6 +20,8 @@ class SQLAnywhereConn:
 
 
 # REPO ########################################################################
+
+
 @dataclass
 class ConnAux:
     ggx_host: str
@@ -56,7 +58,7 @@ class Repo:
     directories: int
     bytes: int
     repo_mod: str
-    outline: List[List[float]] = field(default_factory=list)
+    polygon: List[List[float]] = field(default_factory=list)
     active: Optional[bool] = True
 
     def to_dict(self):
@@ -65,6 +67,7 @@ class Repo:
         repo_dict["conn_aux"] = self.conn_aux.to_dict()
         repo_dict["repo_mod"] = datetime.strptime(self.repo_mod, "%Y-%m-%d %H:%M:%S")
         return repo_dict
+
 
 # #############################################################################
 
@@ -104,5 +107,5 @@ def validate_repo(payload: dict):
         directories=payload["directories"],
         bytes=payload["bytes"],
         repo_mod=payload["repo_mod"],
-        outline=payload["outline"],
+        polygon=payload["polygon"],
     )

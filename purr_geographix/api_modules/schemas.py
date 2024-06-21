@@ -1,7 +1,6 @@
 from pydantic import BaseModel
-from uuid import UUID
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 
 
@@ -14,12 +13,23 @@ class Setup(SetupBase):
         from_attributes = True
 
 
+# class Coordinates(BaseModel):
+#     coordinates: List[Tuple[float, float]] = Field(
+#         ...,
+#         description="A list of longitude-latitude pairs",
+#         example=[
+#             [-97.90777, 27.62867],
+#             [-97.91186, 27.62672]
+#         ]
+#     )
+
+
 class RepoBase(BaseModel):
     active: bool
     name: str
     fs_path: str
     conn: Dict[str, Any]
-    conn_aux: Dict[str, Any]
+    conn_aux: Dict[str, Any] | None
     suite: str
     well_count: int
     wells_with_completion: int
@@ -41,7 +51,7 @@ class RepoBase(BaseModel):
     directories: int
     bytes: int
     repo_mod: datetime
-    outline: Dict[str, Any]
+    polygon: List[Tuple[float, float]] | None
 
 
 class Repo(RepoBase):

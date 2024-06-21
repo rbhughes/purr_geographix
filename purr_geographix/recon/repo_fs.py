@@ -98,11 +98,15 @@ def dir_stats(repo_base) -> dict:
     """
     https://learn.microsoft.com/en-us/sysinternals/downloads/du
     Run microsoft's du utility to collect directory size. Faster than python.
-    :param repo_base: A stub repo dict. We just use the fs_path
-    :return: dict of parsed stdout byte sizes
+
+    Args:
+        repo_base: A stub repo dict. We just use the fs_path
+
+    Returns:
+        dict of parsed stdout byte sizes
     """
     base_dir = Path(__file__).resolve().parent.parent
-    du64 = base_dir / 'bin' / 'du64.exe'
+    du64 = base_dir / "bin" / "du64.exe"
 
     res = run(
         [du64, "-q", "-nobanner", repo_base["fs_path"]],
@@ -125,6 +129,18 @@ def dir_stats(repo_base) -> dict:
 
 
 def repo_mod(repo_base) -> dict:
+    """
+    Walk the project directory to get the latest possible file modification
+    date. We exclude SQLAnywhere files since they are modified simply by making
+    an ODBC connection.
+    TODO: optimize this with multi-threading?
+
+    Args:
+        repo_base: A stub repo dict. We just use the fs_path
+
+    Returns:
+        dict with repo_mod as datetime string
+    """
     last_mod = datetime(1970, 1, 1)
     gxdb_matcher = re.compile(r"gxdb\.db$|gxdb_production\.db$|gxdb\.log$")
 

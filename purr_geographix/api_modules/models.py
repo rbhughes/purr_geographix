@@ -1,6 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer, String, UUID, JSON, TIMESTAMP
+from sqlalchemy import Boolean, Column, Integer, String, JSON, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
-import uuid
 
 Base = declarative_base()
 
@@ -8,7 +7,6 @@ Base = declarative_base()
 class Repo(Base):
     __tablename__ = "repos"
 
-    # id = Column(UUID(as_uuid=True), primary_key=True, index=True)
     id = Column(String(64), primary_key=True, index=True, unique=True)
     active = Column(Boolean)
     name = Column(String)
@@ -36,7 +34,7 @@ class Repo(Base):
     directories = Column(Integer)
     bytes = Column(Integer)
     repo_mod = Column(TIMESTAMP)
-    outline = Column(JSON)
+    polygon = Column(JSON)
 
 
 class Setup(Base):

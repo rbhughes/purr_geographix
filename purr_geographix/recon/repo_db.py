@@ -2,15 +2,10 @@ from common.sqlanywhere import db_exec
 import numpy as np
 import alphashape
 
-
 NOTNULL_LONLAT = (
     "SELECT surface_longitude AS lon, surface_latitude AS lat FROM well "
     "WHERE surface_longitude IS NOT NULL and surface_latitude IS NOT NULL"
 )
-
-# HULL_CONCAVITY = 2
-
-##########
 
 WELLS = "SELECT COUNT(uwi) AS tally FROM well"
 WELLS_WITH_COMPLETION = "SELECT COUNT(DISTINCT uwi) AS tally FROM well_completion"
@@ -64,11 +59,12 @@ WELLS_WITH_ZONE = "SELECT COUNT(DISTINCT uwi) AS tally FROM well_zone_interval"
 
 def well_counts(repo_base) -> dict:
     """
-    Run a bunch of SQL counts for wells having each data type. Note that this
-    is well-centric. For example, it's wells with raster logs, not a count of
-    raster logs.
-    :param repo_base: A stub repo dict. We just use the fs_path
-    :return: dict with each count, named after the keys below
+    Run the SQL counts (above) for each asset data type.
+    Args:
+        repo_base: A stub repo dict. We just use the fs_path
+
+    Returns:
+        A dict with each count, named after the keys below
     """
 
     counter_sql = {
@@ -96,19 +92,12 @@ def well_counts(repo_base) -> dict:
     return counts
 
 
-
-
-
-
-
-
-
 def concave_hull(points, alpha=0.5):
     """
-    Computes the concave hull of a set of points using the alpha shape algorithm.
+    Computes a concave hull of a set of points using the alpha shape algorithm.
 
     Args:
-        points (list): A list of (lon, lat) tuples representing the input points.
+        points (list): A list of (lon, lat) surface well locations.
         alpha (float): A parameter that controls the concaveness of the hull.
             Higher values of alpha produce more concave hulls.
 
@@ -126,14 +115,12 @@ def concave_hull(points, alpha=0.5):
 
     return concave_hull_vertices
 
-#############################################################
 
-
-
-def hull_outline(repo_base) -> dict:
+def get_polygon(repo_base) -> dict:
     """
-    I had used concave_hull https://concave-hull.readthedocs.io/en/latest/
+    I had used concave_hull (https://concave-hull.readthedocs.io/en/latest/),
     but it relies on numpy 1.26.4. The latest numpy (2.0.0) breaks it.
+    This is (obviously) datum agnostic.
 
     The numpy + alphashape concave_hull function above was cobbled together with
     help from Claude and Perplexity. It's not as fancy, but seems faster and
@@ -151,18 +138,10 @@ def hull_outline(repo_base) -> dict:
 
     if len(points) < 3:
         print(f"Too few valid Lon/Lat points for hull: {repo_base["name"]}")
-        return {"outline": None}
-
-    # print('-----------')
-    # print(points)
-    # print('-----------')
+        return {"polygon": None}
 
     hull = concave_hull(points)
     first_point = hull[0]
     hull.append(first_point)
 
-    # print('...........')
-    # print(hull)
-    # print('...........')
-
-    return {"outline": hull}
+    return {"polygon": hull}

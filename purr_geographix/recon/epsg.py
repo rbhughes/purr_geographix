@@ -1725,7 +1725,7 @@ projections = [
 
 def scrub(s: str) -> str:
     """
-    Utility method to (slightly) clean up display text
+    Utility method to (slightly) clean up epsg display text
     :param s: input string
     :return: sanitized string
     """
