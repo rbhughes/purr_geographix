@@ -1,11 +1,24 @@
 from purr_geographix.api_modules.database import get_db
 import hashlib
+import asyncio
+import uuid
+from functools import wraps, partial
 
 # import os
 from pathlib import Path
 from typing import Optional, Union
 
 # from flounder.models.models_a import User
+
+
+def async_wrap(func):
+    @wraps(func)
+    async def run(*args, loop=None, executor=None, **kwargs):
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        pfunc = partial(func, *args, **kwargs)
+        return await loop.run_in_executor(executor, pfunc)
+    return run
 
 
 def say(stuff: str):
@@ -62,10 +75,16 @@ def hashify(value: Union[str, bytes]) -> str:
             is provided, it will be converted to bytes using UTF-8 encoding.
 
     Returns:
-        str: The MD5 hash of the input value as a hexadecimal string.
+        str: The UUID5 hash of the input value as a string.
     """
     if isinstance(value, str):
         value = value.lower().encode("utf-8")
 
-    md5_hash = hashlib.md5(value)
-    return md5_hash.hexdigest()
+    uuid_obj = uuid.uuid5(uuid.NAMESPACE_OID, value.decode('utf-8') if isinstance(value, bytes) else value)
+    return str(uuid_obj)
+
+
+def make_repo_uuid(repo_fs: str):
+    hash_object = hashlib.md5(repo_fs.encode())
+    hex_hash = hash_object.hexdigest()
+    return uuid.UUID(hex_hash)

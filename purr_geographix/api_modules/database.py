@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from contextlib import contextmanager
 
 # from .models import models_a
 import purr_geographix.api_modules.models as models
@@ -17,6 +18,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 models.Base.metadata.create_all(bind=engine)
 
 
+@contextmanager
 def get_db():
     db = SessionLocal()
     try:

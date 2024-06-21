@@ -1,7 +1,10 @@
 from sqlalchemy.orm import Session
-
-# from sqlalchemy.dialects.sqlite import insert
+from fastapi import Depends
+from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy import text
+from typing import List
+# import uuid
+from purr_geographix.api_modules.database import get_db
 
 
 import purr_geographix.api_modules.schemas as schemas
@@ -54,3 +57,22 @@ def update_file_depot(db: Session, file_depot: str):
 
 # def get_repos(db: Session, skip: int = 0, limit: int = 100):
 #     return db.query(models.Repo).offset(skip).limit(limit).all()
+
+
+def upsert_repos(db, repos: List[models.Repo]):
+    stmt = insert(models.Repo).values(repos)
+
+    update_dict = {c.name: c for c in stmt.excluded if c.name != 'id'}
+
+    stmt = stmt.on_conflict_do_update(
+        index_elements=['id'],
+        set_=update_dict
+    )
+    db.execute(stmt, repos)
+    db.commit()
+
+    ids = [repo['id'] for repo in repos]
+    updated_repos = db.query(models.Repo).filter(models.Repo.id.in_(ids)).all()
+
+    return updated_repos
+
