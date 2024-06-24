@@ -62,7 +62,6 @@ def update_file_depot(db: Session, file_depot: str):
     return schemas.Setup(file_depot=result[0] if result else None)
 
 
-
 def upsert_repos(db, repos: List[models.Repo]):
     """
     Upserts (insert or update) a list of repositories in the database.
@@ -76,17 +75,19 @@ def upsert_repos(db, repos: List[models.Repo]):
     """
     stmt = insert(models.Repo).values(repos)
 
-    update_dict = {c.name: c for c in stmt.excluded if c.name != 'id'}
+    update_dict = {c.name: c for c in stmt.excluded if c.name != "id"}
 
-    stmt = stmt.on_conflict_do_update(
-        index_elements=['id'],
-        set_=update_dict
-    )
+    stmt = stmt.on_conflict_do_update(index_elements=["id"], set_=update_dict)
     db.execute(stmt, repos)
     db.commit()
 
-    ids = [repo['id'] for repo in repos]
+    ids = [repo["id"] for repo in repos]
     updated_repos = db.query(models.Repo).filter(models.Repo.id.in_(ids)).all()
 
     return updated_repos
 
+
+def get_repo_by_id(db, repo_id: str):
+    print("!!!!", repo_id)
+    repo = db.query(models.Repo).filter_by(id=repo_id).first()
+    return repo

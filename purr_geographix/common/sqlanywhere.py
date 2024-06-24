@@ -61,6 +61,10 @@ def db_exec(
             with connection.cursor() as cursor:
                 if isinstance(sql, str):
                     cursor.execute(sql)
+
+                    print("ssssssssssssssssssssssssssssssssss")
+                    print(cursor.description)
+                    print("ssssssssssssssssssssssssssssssssss")
                     return [
                         dict(zip([col[0] for col in cursor.description], row))
                         for row in cursor.fetchall()
@@ -69,10 +73,6 @@ def db_exec(
                 if isinstance(sql, list):
                     results = []
                     for s in sql:
-                        # print("ssssssssssssssssssssssssssssssssss")
-                        # print(s)
-                        # print("ssssssssssssssssssssssssssssssssss")
-
                         cursor.execute(s)
                         results.append(
                             [

@@ -93,3 +93,8 @@ class RepoReconResponse(BaseModel):
     recon_root: str
     ggx_host: str
     task_status: TaskStatus
+
+
+class WellThingResponse(BaseModel):
+    id: str
+    task_status: TaskStatus

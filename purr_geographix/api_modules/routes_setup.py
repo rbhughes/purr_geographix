@@ -89,7 +89,6 @@ async def run_repo_recon(recon_root: str, ggx_host: str = "localhost"):
         task_status=schemas.TaskStatus.PENDING,
     )
     task_storage[task_id] = new_repo_recon
-
     # do not await create_task, or it will block the response
     asyncio.create_task(process_repo_recon(task_id, valid_recon_root, ggx_host))
     return new_repo_recon

@@ -3,7 +3,7 @@ from pathlib import Path
 from purr_geographix.api_modules.crud import upsert_repos
 from purr_geographix.api_modules.database import get_db_instance
 from purr_geographix.common.sqlanywhere import make_conn_params
-from purr_geographix.common.util import hashify, async_wrap
+from purr_geographix.common.util import generate_repo_id, async_wrap
 from purr_geographix.common.typeish import validate_repo
 from purr_geographix.recon.epsg import epsg_codes
 from purr_geographix.recon.repo_db import well_counts, get_polygon
@@ -56,7 +56,8 @@ def create_repo_base(rp: str, ggx_host: str):
     See repo_recon for details
     """
     return {
-        "id": hashify(rp),
+        "id": generate_repo_id(rp),
+        # "id": hashify(rp),
         "active": True,
         "name": Path(rp).name,
         "fs_path": str(Path(rp)),

@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import uuid
 from functools import wraps, partial
 from pathlib import Path
@@ -41,6 +42,26 @@ def is_valid_dir(fs_path: str) -> Optional[str]:
         return str(path)
     else:
         return None
+
+
+def generate_repo_id(fs_path: str):
+    """
+    Construct a name + hash id using the pathlib Path. First three chars are
+    from the name, last six from a hash of the path:
+    //scarab/ggx_projects\blank_us_nad27_mean ~~> "BLA_0F0588"
+    Path strings are lowercased to standardize the hash.
+
+    NOTE: Repos resolved via UNC path vs. drive letter will get different IDs.
+    This is intentional.
+
+    :param fs_path: full path to a repo
+    :return: unique id string
+    """
+    fp = Path(fs_path)
+    print(str(fp))
+    prefix = fp.name.upper()[:3]
+    suffix = hashlib.md5(str(fp).lower().encode()).hexdigest()[:6]
+    return f"{prefix}_{suffix}".upper()
 
 
 def hashify(value: Union[str, bytes]) -> str:
