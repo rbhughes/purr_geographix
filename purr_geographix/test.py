@@ -134,6 +134,7 @@ def blocky(conn: dict, child_tables=[], grandchild_tables=[]):
             sql += ",\n".join([f"{a}.*" for a in alias]) + "\n"
             sql += "FROM w\n"
             sql += "\n".join([f"JOIN {a} ON {a}.{a}_uwi = w.uwi" for a in alias]) + "\n"
+            sql += "--where here\n"
             sql += ") purr"
 
             print(sql)
@@ -160,11 +161,11 @@ repo_conn = {
 #     grandchild_tables=["well_dir_srvy_station"],
 # )
 
-res = blocky(
-    conn=repo_conn,
-    # child_tables=["well_formation"],
-    grandchild_tables=["well_formation"],
-)
+# res = blocky(
+#     conn=repo_conn,
+#     # child_tables=["well_formation"],
+#     grandchild_tables=["well_formation"],
+# )
 
 # res = blocky(
 #     conn=repo_conn,
@@ -172,4 +173,8 @@ res = blocky(
 #     grandchild_tables=["well_dir_srvy_station", "well_dir_proposed_srvy_station"],
 # )
 
-# print(res)
+res = blocky(
+    conn=repo_conn,
+    child_tables=["well"],
+    # grandchild_tables=["well_formation"],
+)
