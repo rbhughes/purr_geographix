@@ -1,4 +1,3 @@
-import pandas
 import pyodbc
 import dask.dataframe as dd
 from dask.distributed import Client
@@ -74,12 +73,11 @@ def read_sql_table_chunked(table_name, conn_str, index_col, chunksize=100000):
     def get_column_mappings():
         with pyodbc.connect(**conn_str) as conn:
             cursor = conn.cursor()
-            # return {
-            #     x.column_name: (x.type_name, x.column_size)
-            #     for x in cursor.columns(table=table_name)
-            # }
+
+            # NOTE: columns set to lower()
             return {
-                x.column_name: x.type_name for x in cursor.columns(table=table_name)
+                x.column_name.lower(): x.type_name
+                for x in cursor.columns(table=table_name)
             }
 
     col_mappings = get_column_mappings()
@@ -91,11 +89,18 @@ def read_sql_table_chunked(table_name, conn_str, index_col, chunksize=100000):
         while True:
             query = (
                 f"SELECT TOP {chunksize} START AT {start_at + 1} * FROM "
-                f"{table_name}  WHERE uwi in ('05001050000000', '05001050010000', "
-                f"'05001050030000'"
+                f"{table_name}  WHERE uwi in ('05001066590000', '05001069230000', "
+                f"'05001090800000'"
                 f")  ORDER "
                 f"BY {index_col} "
             )
+            # query = (
+            #     f"SELECT TOP {chunksize} START AT {start_at + 1} * FROM "
+            #     f"{table_name}  WHERE uwi in ('05001050000000', '05001050010000', "
+            #     f"'05001050030000'"
+            #     f")  ORDER "
+            #     f"BY {index_col} "
+            # )
             # query = (
             #     f"SELECT TOP {chunksize} START AT {start_at + 1} * FROM "
             #     f"{table_name}  where uwi in ('42249022870000', '42249022920000', '42249023040000')  ORDER BY {index_col} "
@@ -130,7 +135,7 @@ def read_sql_table_chunked(table_name, conn_str, index_col, chunksize=100000):
                     if dtype == "integer" and col in df.columns:
                         df[col] = df[col].astype("Int64")
 
-                print(df)
+                # print(df.columns.str.lower())
 
             if df.empty:
                 break
@@ -150,136 +155,90 @@ def read_sql_table_chunked(table_name, conn_str, index_col, chunksize=100000):
 ##############
 
 
-def rollup_child_rows(parent_df, child_df, composite_key):
-    # Identify the columns that are unique to the child table
-    child_unique_columns = child_df.columns.difference(parent_df.columns)
+def maker(primary, singles, rollups):
+    records = []
 
-    # Create a dictionary of aggregation functions
-    agg_dict = {col: list for col in child_unique_columns}
+    prime_df, prime_name, prime_idx = primary
+    prime_dict = prime_df.to_dict(orient="index")
 
-    # Group by the composite key and aggregate the child-specific columns into lists
-    rolled_up_child = child_df.groupby(composite_key).agg(agg_dict)
+    for idx, prime_row in prime_dict.items():
+        o = {prime_name: prime_row}
 
-    # Merge the rolled-up child data with the parent data
-    result = parent_df.merge(rolled_up_child, on=composite_key, how="left")
+        for s in singles:
+            s_df, s_name, s_idx = s
+            s_dict = s_df.to_dict(orient="index")
+            o[s_name] = s_dict.get(idx, {col: [] for col in s_df.columns})
 
-    return result
+        for r in rollups:
+            r_df, r_name, r_idx = r
+            r_agg = r_df.groupby(r_idx).agg(lambda x: x.tolist()).reset_index()
+            r_dict = r_agg.to_dict(orient="index")
+            o[r_name] = r_dict.get(idx, {col: [] for col in r_df.columns})
 
+        records.append(o)
 
-# def create_nested_dict(
-#     parent_df, child_df, composite_key, parent_table_name, child_table_name
-# ):
-#     parent_dict = parent_df.set_index(composite_key).to_dict(orient="index")
-#     child_dict = (
-#         child_df.groupby(composite_key)
-#         .apply(lambda x: x.to_dict(orient="records"))
-#         .to_dict()
-#     )
-#
-#     nested_dict = {}
-#     for key in parent_dict.keys():
-#         nested_dict[key] = {
-#             parent_table_name: parent_dict[key],
-#             child_table_name: child_dict.get(key, []),
-#         }
-#
-#     return nested_dict
+    return records
 
 
 # def create_nested_dict(
-#     parent_df, child_df, composite_key, parent_table_name, child_table_name
+#     well_df, parent_df, child_df, composite_key, parent_table_name, child_table_name
 # ):
-#     parent_dict = parent_df.set_index(composite_key).to_dict(orient="index")
+#     well_dict = well_df.to_dict(orient="index")
+#     parent_dict = parent_df.to_dict(orient="index")
 #
-#     # Aggregate child DataFrame values into lists for each key
-#     child_agg = child_df.groupby(composite_key).agg(list).reset_index()
-#     child_dict = child_agg.set_index(composite_key).to_dict(orient="index")
-#
-#     nested_dict = {}
-#     for key in parent_dict.keys():
-#         nested_dict[key] = {
-#             parent_table_name: parent_dict[key],
-#             child_table_name: child_dict.get(
-#                 key, {col: [] for col in child_df.columns if col not in composite_key}
-#             ),
-#         }
-#
-#     return nested_dict
-
-
-def create_nested_dict(
-        parent_df, child_df, composite_key, parent_table_name, child_table_name
-):
-    parent_dict = parent_df.to_dict(orient="index")
-
-    # Aggregate child DataFrame values into lists for each key
-    child_agg = child_df.groupby(composite_key).agg(lambda x: x.tolist()).reset_index()
-    child_dict = child_agg.to_dict(orient="index")
-
-    # cleaned_dict = replace_nan_inf(child_dict)
-    # myjson = json.dumps(cleaned_dict, indent=4, cls=CustomEncoder)
-    # exit(0)
-    # print(myjson)
-
-    # nested_dict = {}
-    stuff = []
-
-    for idx, parent_row in parent_dict.items():
-        # key = str(tuple(parent_row[k] for k in composite_key))
-        # nested_dict[key] = {
-        #     parent_table_name: parent_row,
-        #     child_table_name: child_dict.get(
-        #         idx, {col: [] for col in child_df.columns}
-        #     ),
-        # }
-        stuff.append(
-            {
-                parent_table_name: parent_row,
-                child_table_name: child_dict.get(
-                    idx, {col: [] for col in child_df.columns}
-                ),
-            }
-        )
-
-    # print(stuff)
-    myjson = json.dumps(stuff, indent=4, cls=CustomEncoder)
-    print(myjson)
-    return stuff
-    # return nested_dict
-
-
-# def create_nested_dict(
-#     parent_df, child_df, composite_key, parent_table_name, child_table_name
-# ):
-#     parent_dict = parent_df.to_dict(orient="records")
-#
-#     # Aggregate child DataFrame values into lists for each key
 #     child_agg = child_df.groupby(composite_key).agg(lambda x: x.tolist()).reset_index()
-#     child_dict = child_agg.to_dict(orient="records")
+#     child_dict = child_agg.to_dict(orient="index")
 #
-#     nested_dict = {}
-#     for parent_row in parent_dict:
-#         key = str(tuple(parent_row[k] for k in composite_key))
-#         child_row = next(
-#             (
-#                 item
-#                 for item in child_dict
-#                 if all(item[k] == parent_row[k] for k in composite_key)
-#             ),
-#             {},
+#     records = []
+#
+#     for idx, well_row in well_dict.items():
+#         records.append(
+#             {
+#                 "well": well_row,
+#                 parent_table_name: parent_dict.get(
+#                     idx, {col: [] for col in parent_df.columns}
+#                 ),
+#                 child_table_name: child_dict.get(
+#                     idx, {col: [] for col in child_df.columns}
+#                 ),
+#             }
 #         )
 #
-#         # Remove composite key from child_row
-#         for k in composite_key:
-#             child_row.pop(k, None)
+#     # for idx, parent_row in parent_dict.items():
+#     #     records.append(
+#     #         {
+#     #             parent_table_name: parent_row,
+#     #             child_table_name: child_dict.get(
+#     #                 idx, {col: [] for col in child_df.columns}
+#     #             ),
+#     #         }
+#     #     )
 #
-#         nested_dict[key] = {parent_table_name: parent_row, child_table_name: child_row}
-#
-#     cleaned_dict = replace_nan_inf(nested_dict)
-#     myjson = json.dumps(cleaned_dict, indent=4, cls=CustomEncoder)
-#     print(myjson)
-#     # return nested_dict
+#     return records
 
+
+"""
+def create_parent_child_json(parent_df, child_df_list, parent_key, child_keys):
+    records = []
+
+    for _, parent_row in parent_df.iterrows():
+        parent_record = parent_row.to_dict()
+        parent_record["children"] = []
+
+        for child_df in child_df_list:
+            child_records = child_df[
+                child_df[parent_key] == parent_row[parent_key]
+            ].to_dict("records")
+            for child_record in child_records:
+                filtered_child_record = {
+                    key: child_record[key] for key in child_keys if key in child_record
+                }
+                parent_record["children"].append(filtered_child_record)
+
+        records.append(parent_record)
+
+    return records
+"""
 
 ##############
 ####################################
@@ -303,49 +262,64 @@ conn_str = {
 def main():
     client = Client()
 
-    parent_ddf = read_sql_table_chunked("well", conn_str, index_col="UWI")
-    child_ddf = read_sql_table_chunked("well_formation", conn_str, index_col="UWI")
+    well_ddf = read_sql_table_chunked("well", conn_str, index_col="uwi")
 
-    composite_key = ["UWI"]
-    parent_table_name = "well"
-    child_table_name = "well_formation"
+    parent_ddf = read_sql_table_chunked("well_dir_srvy", conn_str, index_col="uwi")
+    child_ddf = read_sql_table_chunked(
+        "well_dir_srvy_station", conn_str, index_col="uwi"
+    )
 
+    composite_key = ["uwi"]
+    parent_table_name = "well_dir_srvy"
+    child_table_name = "well_dir_srvy_station"
+
+    well_df = well_ddf.compute()
     parent_df = parent_ddf.compute()
     child_df = child_ddf.compute()
 
-    nested_dict = create_nested_dict(
-        parent_df, child_df, composite_key, parent_table_name, child_table_name
-    )
+    primary = (well_df, "well", ("uwi"))
+    singles = [(parent_df, "well_dir_srvy", ("uwi"))]
+    rollups = [(child_df, "well_dir_srvy_station", ("uwi"))]
+    records = maker(primary, singles, rollups)
+    myjson = json.dumps(records, indent=4, cls=CustomEncoder)
+    with open("hello.txt", mode="w") as file:
+        file.write(myjson)
 
-    # nested_dict = create_nested_dict(
-    #     parent_df, child_df, composite_key, parent_table_name, child_table_name
+    # records = create_nested_dict(
+    #     well_df, parent_df, child_df, composite_key, parent_table_name, child_table_name
     # )
     #
-    # cleaned_dict = replace_nan_inf(nested_dict)
-    # json_cols = json.dumps(cleaned_dict, indent=4, cls=CustomEncoder)
-
-    # print(json_cols)
+    # myjson = json.dumps(records, indent=4, cls=CustomEncoder)
+    # print(myjson)
+    # #
+    # with open("hello.txt", mode="w") as file:
+    #     file.write(myjson)
 
     client.close()
 
 
-# def main():
+# def mainZ():
 #     client = Client()
 #
-#     parent_df = read_sql_table_chunked("well", conn_str, index_col="UWI")
-#     child_df = read_sql_table_chunked("well_formation", conn_str, index_col="UWI")
+#     parent_ddf = read_sql_table_chunked("well", conn_str, index_col="uwi")
+#     child_ddf = read_sql_table_chunked("well_formation", conn_str, index_col="uwi")
 #
-#     composite_key = ["UWI"]
-#     merged_df = rollup_child_rows(parent_df, child_df, composite_key)
+#     composite_key = ["uwi"]
+#     parent_table_name = "well"
+#     child_table_name = "well_formation"
 #
-#     result = merged_df.compute()
-#     result.columns = result.columns.str.lower()
+#     parent_df = parent_ddf.compute()
+#     child_df = child_ddf.compute()
 #
-#     dict_cols = result.to_dict(orient="records")
-#     cleaned_dict = replace_nan_inf(dict_cols)
-#     json_cols = json.dumps(cleaned_dict, indent=4, cls=CustomEncoder)
+#     records = create_nested_dict(
+#         parent_df, child_df, composite_key, parent_table_name, child_table_name
+#     )
 #
-#     print(json_cols)
+#     myjson = json.dumps(records, indent=4, cls=CustomEncoder)
+#     print(myjson)
+#     #
+#     # with open("hello.txt", mode="w") as file:
+#     #     file.write(myjson)
 #
 #     client.close()
 
