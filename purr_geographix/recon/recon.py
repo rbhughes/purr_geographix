@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
 from purr_geographix.api_modules.crud import upsert_repos
-from purr_geographix.api_modules.database import get_db_instance
+from purr_geographix.api_modules.database import get_db
 from purr_geographix.common.sqlanywhere import make_conn_params
 from purr_geographix.common.util import generate_repo_id, async_wrap
 from purr_geographix.common.typeish import validate_repo
@@ -41,7 +41,8 @@ async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
 
     validated_repo_dicts = [validate_repo(r).to_dict() for r in repos]
 
-    db = get_db_instance()
+    # db = get_db_instance()
+    db = next(get_db())
     upsert_repos(db, validated_repo_dicts)
     db.close()
 

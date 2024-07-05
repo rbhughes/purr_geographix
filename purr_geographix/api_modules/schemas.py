@@ -1,7 +1,7 @@
-from pydantic import BaseModel
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from pydantic import BaseModel
 
 
 class SetupBase(BaseModel):
@@ -95,6 +95,6 @@ class RepoReconResponse(BaseModel):
     task_status: TaskStatus
 
 
-class WellThingResponse(BaseModel):
+class AssetCollectionResponse(BaseModel):
     id: str
     task_status: TaskStatus

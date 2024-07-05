@@ -1,5 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, JSON, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
+from enum import Enum
+from typing import List, Any
 
 Base = declarative_base()
 
@@ -7,7 +9,7 @@ Base = declarative_base()
 class Repo(Base):
     __tablename__ = "repos"
 
-    id = Column(String(64), primary_key=True, index=True, unique=True)
+    id = Column(String, primary_key=True, index=True, unique=True)
     active = Column(Boolean)
     name = Column(String)
     fs_path = Column(String)

@@ -1,12 +1,12 @@
 import uvicorn
 from fastapi import FastAPI
 from purr_geographix.api_modules import routes_setup
-from assets.well import routes_well
+from assets.collect import routes_assets
 
 app = FastAPI()
 
 app.include_router(routes_setup.router, prefix="/purr/ggx")
-app.include_router(routes_well.router, prefix="/purr/ggx")
+app.include_router(routes_assets.router, prefix="/purr/ggx")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

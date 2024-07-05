@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Dict
+import traceback
 import purr_geographix.api_modules.schemas as schemas
 import purr_geographix.api_modules.crud as crud
 from purr_geographix.api_modules.database import get_db
@@ -33,6 +34,7 @@ def update_file_depot(file_depot: str, db: Session = Depends(get_db)):
         return db_setup
     except Exception as e:
         # Handle any database-related errors
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while updating the file_depot: {str(e)}",
@@ -64,6 +66,8 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
     except Exception as e:
         task_storage[task_id].task_status = schemas.TaskStatus.FAILED
         print(f"Task failed for {task_id}: {str(e)}")
+        stack_trace = traceback.format_exc()
+        print(stack_trace)
 
 
 @router.post(

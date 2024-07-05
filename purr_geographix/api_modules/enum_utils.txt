@@ -1,0 +1,81 @@
+from enum import Enum
+from types import new_class
+from typing import Dict, Type
+
+from purr_geographix.api_modules.crud import fetch_repo_ids
+from purr_geographix.api_modules.database import get_db
+
+
+class DatabaseEnumMeta(type(Enum)):
+    def __new__(metacls, cls, bases, classdict):
+        db = next(get_db())
+
+        for repo_id in fetch_repo_ids(db):
+            member_name = repo_id.lower()
+            member_value = repo_id
+            classdict[member_name] = member_value
+
+        return super().__new__(metacls, cls, bases, classdict)
+
+
+class RepoIdEnum(str, Enum, metaclass=DatabaseEnumMeta):
+    pass
+
+
+#####
+
+
+# this works
+"""
+class RepoIdEnum:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls._create_enum()
+        return cls._instance
+
+    @classmethod
+    def _create_enum(cls) -> Type[Enum]:
+        db = next(get_db())
+        enum_dict: Dict[str, str] = {
+            repo_id.lower(): repo_id for repo_id in fetch_repo_ids(db)
+        }
+        return Enum("RepoIdEnum", enum_dict, type=str)
+
+    @classmethod
+    def refresh(cls):
+        cls._instance = cls._create_enum()
+
+"""
+
+
+#####
+
+
+class AssetTypeEnum(str, Enum):
+    completion = "completion"
+    core = "core"
+    dst = "dst"
+    formation = "formation"
+    ip = "ip"
+    perforation = "perforation"
+    production = "production"
+    raster_log = "raster_log"
+    survey = "survey"
+    vector_log = "vector_log"
+    well = "well"
+    zone = "zone"
+
+
+# SAM_C1BBA2
+# NOR_BD29A9
+# COL_7159C5
+# STR_9A5DDB
+# BLA_F927E7
+# STR_799C52
+# BLA_E74549
+# STR_E7E35A
+# BLA_0F0588
+# OK_EEAC10
