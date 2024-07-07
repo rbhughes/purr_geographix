@@ -12,9 +12,6 @@ COMPLETION = {
             "group_by": "uwi",
         }
     ],
-    # "uwi_filter": "050010902%",
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 # Should be double-nesting based on well_core.core_id
@@ -37,8 +34,6 @@ CORE = {
             "group_by": "uwi",
         },
     ],
-    # "uwi_filter": "05057064630000",
-    # "uwi_filter": "050%",
 }
 
 DST = {
@@ -74,8 +69,6 @@ DST = {
             "conditions": ["test_type = 'DST'"],
         },
     ],
-    # "uwi_filter": "050%",
-    # "uwi_filter": "0500%",
 }
 
 FORMATION = {
@@ -92,8 +85,6 @@ FORMATION = {
             "group_by": "uwi",
         }
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 IP = {
@@ -129,8 +120,6 @@ IP = {
             "conditions": ["test_type = 'IP'"],
         },
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 PERFORATION = {
@@ -147,8 +136,6 @@ PERFORATION = {
             "group_by": "uwi",
         }
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "0500%",
 }
 
 # should be double-nesting based on well_cumulative_production.zone_id
@@ -171,8 +158,6 @@ PRODUCTION = {
             "group_by": "uwi",
         },
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 # NOTE: we skip log_depth_cal_vec.vid = log_image_reg_log_section.log_depth_cal_vid
@@ -190,10 +175,9 @@ RASTER_LOG = {
             "group_by": "uwi",
         },
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
+# there is probably just one well_dir_srvy, but seemingly not enforced
 SURVEY = {
     "primary": {
         "table_name": "well",
@@ -205,17 +189,27 @@ SURVEY = {
         ),
         "subconditions": ["__uwi_sub__"],
     },
-    "singles": [
+    # "singles": [
+    #     {
+    #         "table_name": "well_dir_srvy",
+    #         "index_col": "uwi",
+    #     },
+    #     {
+    #         "table_name": "well_dir_proposed_srvy",
+    #         "index_col": "uwi",
+    #     },
+    # ],
+    "rollups": [
         {
             "table_name": "well_dir_srvy",
             "index_col": "uwi",
+            "group_by": "uwi",
         },
         {
             "table_name": "well_dir_proposed_srvy",
             "index_col": "uwi",
+            "group_by": "uwi",
         },
-    ],
-    "rollups": [
         {
             "table_name": "well_dir_srvy_station",
             "index_col": "uwi",
@@ -227,8 +221,6 @@ SURVEY = {
             "group_by": "uwi",
         },
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 VECTOR_LOG = {
@@ -255,15 +247,10 @@ VECTOR_LOG = {
             "group_by": "uwi",
         },
     ],
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 WELL = {
     "primary": {"table_name": "well", "index_col": "uwi"},
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "0500109%",
-    # "uwi_filter": "050%",
 }
 
 ZONE = {
@@ -285,9 +272,6 @@ ZONE = {
             "group_by": "uwi",
         },
     ],
-    # "uwi_filter": "050010902%",
-    # "uwi_filter": "050010902%|050130657%|0504507834%",
-    # "uwi_filter": "050%",
 }
 
 templates = {

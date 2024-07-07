@@ -12,6 +12,11 @@ def get_setup(db: Session):
     return {"setup": setup, "repos": repos}
 
 
+def get_file_depot(db: Session):
+    setup = db.query(models.Setup).first()
+    return setup.file_depot
+
+
 # THIS WORKS as of 2024-06-16
 # def upsert_settings(db: Session, settings: schemas.SettingsCreate):
 #     stmt = text("""

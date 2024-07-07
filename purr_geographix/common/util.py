@@ -4,6 +4,7 @@ import uuid
 import json
 import pandas as pd
 import numpy as np
+import time
 from datetime import datetime, date
 from functools import wraps, partial
 from pathlib import Path
@@ -152,3 +153,7 @@ def safe_numeric(x):
         return pd.to_numeric(x, errors="coerce")
     except:
         return None
+
+
+def timestamp_filename(repo_id: str, asset: str, ext: str = "json"):
+    return f"{repo_id}_{int(time.time())}_{asset}.{ext}".lower()

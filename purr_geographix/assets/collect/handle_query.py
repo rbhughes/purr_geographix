@@ -1,11 +1,17 @@
+import json
 import pyodbc
 import pandas as pd
 from datetime import datetime
-
+from pathlib import Path
 from purr_geographix.api_modules.database import get_db
-from purr_geographix.api_modules.crud import get_repo_by_id
+from purr_geographix.api_modules.crud import get_repo_by_id, get_file_depot
 from purr_geographix.assets.collect.select_templates import templates
-from purr_geographix.common.util import datetime_formatter, safe_numeric
+from purr_geographix.common.util import (
+    datetime_formatter,
+    safe_numeric,
+    timestamp_filename,
+    CustomEncoder,
+)
 
 formatters = {
     "date": datetime_formatter(),
@@ -64,8 +70,8 @@ def read_sql_table_chunked(
         table_name,
         index_col,
         subquery=None,
-        subconditions=[],
-        conditions=[],
+        subconditions=None,
+        conditions=None,
         chunksize=10000,
 ):
     where_clause = build_where_clause(
@@ -85,7 +91,6 @@ def read_sql_table_chunked(
     col_mappings = get_column_mappings()
     columns = list(col_mappings.keys())
 
-    # 05057064630000
     def read_chunk():
 
         start_at = 0
@@ -138,9 +143,6 @@ def read_sql_table_chunked(
 
 
 def collect_and_assemble_docs(args):
-    print("__________________")
-    print(args)
-    print("__________________")
     conn = args["conn"]
     uwi_query = args.get("uwi_query", None)
 
@@ -160,6 +162,7 @@ def collect_and_assemble_docs(args):
             continue
 
         primary_chunk.set_index(args["primary"]["index_col"], drop=False, inplace=True)
+        print("MADE IT HERE 0")
 
         singles_dict = {}
         if "singles" in args:
@@ -182,10 +185,12 @@ def collect_and_assemble_docs(args):
                     single_chunk.set_index(
                         single["index_col"], drop=False, inplace=True
                     )
+                    print("MADE IT HERE 1")
                     single_chunk = single_chunk.rename(columns={"uwi": "uwi_link"})
                     singles_dict[single["table_name"]] = single_chunk.to_dict(
                         orient="index"
                     )
+                    print("MADE IT HERE 2")
                 # essential for when index_col != "uwi" and chunksize is lower than count
                 single["index_col"] = orig_index_col
 
@@ -210,6 +215,7 @@ def collect_and_assemble_docs(args):
                     rollup_chunk.set_index(
                         rollup["index_col"], drop=False, inplace=True
                     )
+                    print("MADE IT HERE 2")
                     rollup_chunk = rollup_chunk.rename(columns={"uwi": "uwi_link"})
                     group_by = rollup["group_by"]
                     r_agg = (
@@ -224,6 +230,11 @@ def collect_and_assemble_docs(args):
 
         for idx, row in primary_chunk.iterrows():
             record = {args["primary"]["table_name"]: row.to_dict()}
+
+            record["purr_id"] = "_".join(
+                [args["repo_id"], args["asset"], record["well"]["uwi"]]
+            )
+
             for table_name, s_dict in singles_dict.items():
                 record[table_name] = s_dict.get(idx, None)
             for table_name, r_dict in rollups_dict.items():
@@ -237,23 +248,39 @@ def collect_and_assemble_docs(args):
 ##############################################################################
 
 
+def export_json(records, repo_id, asset):
+    db = next(get_db())
+    file_depot = Path(get_file_depot(db))
+
+    jd = json.dumps(records, indent=4, cls=CustomEncoder)
+    json_file = timestamp_filename(repo_id, asset)
+    out_file = Path(file_depot / json_file)
+
+    with open(out_file, "w") as file:
+        file.write(jd)
+    return f"Exported {len(records)} docs to: {out_file}"
+
+
+# Want to send json directly? No you don't. See CustomJSONResponse in
+# routes-assets, but this quickly clobbers browsers and is a generally bad idea.
 async def selector(repo_id: str, asset: str, uwi_query: str = None):
     db = next(get_db())
     template = templates[asset]
     repo = get_repo_by_id(db, repo_id)
     conn = repo.conn
 
-    args = {**template, "conn": conn, "uwi_query": uwi_query}
-    print("aaaaaaaaaaaaaaaay")
-    print(args)
+    collection_args = {
+        **template,
+        "repo_id": repo_id,
+        "asset": asset,
+        "conn": conn,
+        "uwi_query": uwi_query,
+    }
+    records = collect_and_assemble_docs(collection_args)
 
-    records = collect_and_assemble_docs(args)
+    if len(records) > 0:
+        summary = export_json(records, repo_id, asset)
+        return summary
 
-    print("SSSSSSSSSSSSSSSSSSS")
-    print(conn)
-    print("repo_id", repo_id)
-    print("asset", asset)
-    print("uwi_query", uwi_query)
-    print(records)
-    print("SSSSSSSSSSSSSSSSSSS")
-    return template
+    else:
+        return "Query returned no results"

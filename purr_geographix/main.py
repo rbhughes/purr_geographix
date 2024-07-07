@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from purr_geographix.api_modules import routes_setup
-from assets.collect import routes_assets
+from purr_geographix.assets.collect import routes_assets
 
 app = FastAPI()
 

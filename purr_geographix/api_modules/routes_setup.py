@@ -1,10 +1,10 @@
 import asyncio
 import json
+import traceback
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Dict
-import traceback
 import purr_geographix.api_modules.schemas as schemas
 import purr_geographix.api_modules.crud as crud
 from purr_geographix.api_modules.database import get_db

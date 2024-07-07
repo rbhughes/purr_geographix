@@ -1,7 +1,5 @@
 from sqlalchemy import Boolean, Column, Integer, String, JSON, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
-from enum import Enum
-from typing import List, Any
 
 Base = declarative_base()
 
