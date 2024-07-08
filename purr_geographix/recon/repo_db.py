@@ -1,6 +1,6 @@
 import numpy as np
 import alphashape
-from common.sqlanywhere import db_exec
+from core.sqlanywhere import db_exec
 
 NOTNULL_LONLAT = (
     "SELECT surface_longitude AS lon, surface_latitude AS lat FROM well "

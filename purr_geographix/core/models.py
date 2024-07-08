@@ -37,7 +37,13 @@ class Repo(Base):
     polygon = Column(JSON)
 
 
-class Setup(Base):
-    __tablename__ = "setup"
+class Settings(Base):
+    __tablename__ = "settings"
 
-    file_depot = Column(String, primary_key=True)
+    file_depot = Column(
+        # String, primary_key=True, nullable=True, server_default="C:/Users/bryan"
+        String,
+        primary_key=True,
+        nullable=True,
+        server_default="C:/Users/bryan",
+    )

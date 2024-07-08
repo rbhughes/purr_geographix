@@ -3,14 +3,14 @@ import pyodbc
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from purr_geographix.api_modules.database import get_db
-from purr_geographix.api_modules.crud import get_repo_by_id, get_file_depot
+from purr_geographix.core.database import get_db
+from purr_geographix.core.crud import get_repo_by_id, get_file_depot
 from purr_geographix.assets.collect.select_templates import templates
-from purr_geographix.common.util import (
+from core.util import (
     datetime_formatter,
     safe_numeric,
     timestamp_filename,
-    CustomEncoder,
+    CustomJSONEncoder,
 )
 
 formatters = {
@@ -250,11 +250,12 @@ def collect_and_assemble_docs(args):
 
 def export_json(records, repo_id, asset):
     db = next(get_db())
-    file_depot = Path(get_file_depot(db))
+    file_depot = get_file_depot(db)
+    depot_path = Path(file_depot)
 
-    jd = json.dumps(records, indent=4, cls=CustomEncoder)
+    jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
     json_file = timestamp_filename(repo_id, asset)
-    out_file = Path(file_depot / json_file)
+    out_file = Path(depot_path / json_file)
 
     with open(out_file, "w") as file:
         file.write(jd)

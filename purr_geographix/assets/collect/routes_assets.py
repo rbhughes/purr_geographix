@@ -7,9 +7,9 @@ from fastapi import APIRouter, HTTPException, status, Query, Path
 from typing import Dict
 from purr_geographix.assets.collect.handle_query import selector
 from pydantic import BaseModel
-from purr_geographix.api_modules.database import get_db
-from purr_geographix.api_modules.crud import fetch_repo_ids
-import purr_geographix.api_modules.schemas as schemas
+from purr_geographix.core.database import get_db
+from purr_geographix.core.crud import fetch_repo_ids
+import purr_geographix.core.schemas as schemas
 
 
 # from fastapi.responses import JSONResponse
@@ -90,7 +90,7 @@ async def process_asset_collection(
 
 
 @router.get(
-    "/collect/{task_id}",
+    "/asset/status/{task_id}",
     response_model=schemas.AssetCollectionResponse,
     summary="Check asset collection status",
     description="The asset collection task may take several minutes. Use this "
@@ -103,7 +103,7 @@ async def get_asset_collect_status(task_id: str):
 
 
 @router.post(
-    "/collect/{repo_id}/{asset}",
+    "/asset/{repo_id}/{asset}",
     response_model=schemas.AssetCollectionResponse,
     summary="get asset data",
     description="some kinda description",

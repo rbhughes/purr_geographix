@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import purr_geographix.api_modules.models as models
+import purr_geographix.core.models as models
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./purrio.sqlite"
 

@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 from retry import retry
 from typing import Any, Dict, List, Union
-from common.typeish import SQLAnywhereConn
+from core.typeish import SQLAnywhereConn
 
 
 class RetryException(Exception):
@@ -16,7 +16,7 @@ SQLANY_DRIVER = "SQL Anywhere 17"
 
 @retry(RetryException, tries=5)
 def db_exec(
-    conn: Union[dict, "SQLAnywhereConn"], sql: Union[str, List[str]]
+        conn: Union[dict, "SQLAnywhereConn"], sql: Union[str, List[str]]
 ) -> Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]]:
     """
     This function connects to a SQLAnywhere database using the provided connection

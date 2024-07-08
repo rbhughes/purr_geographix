@@ -1,0 +1,48 @@
+# yanked out 2024-07-07
+
+class SettingsWithRepos(BaseModel):
+    settings: Optional[Settings] = None
+    repos: List[Repo] = []
+
+@router.get("/settings/", response_model=schemas.SettingsWithRepos)
+def read_settings(db: Session = Depends(get_db)):
+    result = crud.get_settings(db)
+    return schemas.SettingsWithRepos(
+        settings=result["settings"] if result["settings"] else None,
+        repos=result["repos"],
+    )
+
+
+# THIS WORKS as of 2024-06-16
+# def upsert_settings(db: Session, settings: schemas.SettingsCreate):
+#     stmt = text("""
+#         INSERT INTO settings (file_depot)
+#         VALUES (:file_depot)
+#         ON CONFLICT(file_depot) DO UPDATE SET file_depot = excluded.file_depot
+#         """)
+#     db.execute(stmt, {"file_depot": settings.file_depot})
+#     db.commit()
+#
+#     result = db.execute(text("SELECT file_depot FROM settings")).fetchone()
+#     return schemas.Settings(file_depot=result[0] if result else None)
+
+# works for settings everything at once
+# def write_settings(db: Session, settings: schemas.SettingsCreate):
+#     delete_stmt = text("DELETE FROM settings")
+#     db.execute(delete_stmt)
+#     insert_stmt = text("INSERT INTO settings (file_depot) VALUES (:file_depot)")
+#     db.execute(insert_stmt, {"file_depot": settings.file_depot})
+#     db.commit()
+#     result = db.execute(text("SELECT file_depot FROM settings")).fetchone()
+#     return schemas.Settings(file_depot=result[0] if result else None)
+
+# class CustomJSONResponse(JSONResponse):
+#     def render(self, content: any) -> bytes:
+#         return json.dumps(
+#             content,
+#             ensure_ascii=False,
+#             allow_nan=False,
+#             indent=None,
+#             separators=(",", ":"),
+#             cls=CustomEncoder,
+#         ).encode("utf-8")

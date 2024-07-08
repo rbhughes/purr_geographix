@@ -1,10 +1,10 @@
 import asyncio
 from pathlib import Path
-from purr_geographix.api_modules.crud import upsert_repos
-from purr_geographix.api_modules.database import get_db
-from purr_geographix.common.sqlanywhere import make_conn_params
-from purr_geographix.common.util import generate_repo_id, async_wrap
-from purr_geographix.common.typeish import validate_repo
+from purr_geographix.core.crud import upsert_repos
+from purr_geographix.core.database import get_db
+from core.sqlanywhere import make_conn_params
+from core.util import generate_repo_id, async_wrap
+from core.typeish import validate_repo
 from purr_geographix.recon.epsg import epsg_codes
 from purr_geographix.recon.repo_db import well_counts, get_polygon
 from purr_geographix.recon.repo_fs import network_repo_scan, dir_stats, repo_mod

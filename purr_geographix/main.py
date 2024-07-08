@@ -1,11 +1,22 @@
 import uvicorn
 from fastapi import FastAPI
-from purr_geographix.api_modules import routes_setup
+from contextlib import asynccontextmanager
+from purr_geographix.core import routes_settings
 from purr_geographix.assets.collect import routes_assets
+from purr_geographix.core.crud import init_file_depot
+from purr_geographix.core.database import get_db
 
-app = FastAPI()
 
-app.include_router(routes_setup.router, prefix="/purr/ggx")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = next(get_db())
+    init_file_depot(db)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(routes_settings.router, prefix="/purr/ggx")
 app.include_router(routes_assets.router, prefix="/purr/ggx")
 
 if __name__ == "__main__":

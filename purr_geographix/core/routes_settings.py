@@ -5,10 +5,10 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Dict
-import purr_geographix.api_modules.schemas as schemas
-import purr_geographix.api_modules.crud as crud
-from purr_geographix.api_modules.database import get_db
-from purr_geographix.common.util import is_valid_dir
+import purr_geographix.core.schemas as schemas
+import purr_geographix.core.crud as crud
+from purr_geographix.core.database import get_db
+from core.util import is_valid_dir
 from purr_geographix.recon.recon import repo_recon
 
 router = APIRouter()
@@ -17,8 +17,8 @@ task_storage: Dict[str, schemas.RepoReconResponse] = {}
 
 
 @router.post(
-    "/setup/file_depot",
-    response_model=schemas.Setup,
+    "/settings/file_depot",
+    response_model=schemas.Settings,
     summary="Storage for query result files.",
     description="TBD description",
 )
@@ -30,8 +30,8 @@ def update_file_depot(file_depot: str, db: Session = Depends(get_db)):
             detail=f"Invalid directory: {file_depot}",
         )
     try:
-        db_setup = crud.update_file_depot(db=db, file_depot=valid_dir)
-        return db_setup
+        db_settings = crud.update_file_depot(db=db, file_depot=valid_dir)
+        return db_settings
     except Exception as e:
         # Handle any database-related errors
 
@@ -41,16 +41,31 @@ def update_file_depot(file_depot: str, db: Session = Depends(get_db)):
         )
 
 
-@router.get("/setup/", response_model=schemas.SetupWithRepos)
-def read_setup(db: Session = Depends(get_db)):
-    result = crud.get_setup(db)
-    return schemas.SetupWithRepos(setup=result["setup"], repos=result["repos"])
+@router.get(
+    "/settings/file_depot",
+    response_model=schemas.FileDepot,
+)
+def get_file_depot(db: Session = Depends(get_db)):
+    file_depot = crud.get_file_depot(db)
+    return file_depot
 
 
-# @router.get("/repos/", response_model=list[schemas.Repo])
-# def read_repos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-#     repos = crud.get_repos(db, skip=skip, limit=limit)
-#     return repos
+@router.get("/repos/", response_model=list[schemas.Repo])
+def read_repos(db: Session = Depends(get_db)):
+    repos = crud.get_repos(db)
+    return repos
+
+
+@router.get("/repos/minimal", response_model=list[schemas.RepoMinimal])
+def read_repos(db: Session = Depends(get_db)):
+    repos = crud.get_repos(db)
+    return repos
+
+
+@router.get("/repos/{repo_id}", response_model=schemas.Repo)
+def read_repos(repo_id: str, db: Session = Depends(get_db)):
+    repo = crud.get_repo_by_id(db, repo_id)
+    return repo
 
 
 async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
@@ -71,7 +86,7 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
 
 
 @router.post(
-    "/setup/repo_recon",
+    "/repos/crawl",
     response_model=schemas.RepoReconResponse,
     summary="Crawl for repos",
     description="Provide a top-level 'recon_root' path (i.e. Project Home) "
@@ -99,7 +114,7 @@ async def run_repo_recon(recon_root: str, ggx_host: str = "localhost"):
 
 
 @router.get(
-    "/setup/repo_recon/{task_id}",
+    "/repos/crawl/status/{task_id}",
     response_model=schemas.RepoReconResponse,
     summary="Check status of repo recon task",
     description="The repo_recon task may take several minutes. Use this to "

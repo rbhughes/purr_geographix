@@ -34,14 +34,6 @@ def async_wrap(func):
 
 
 def is_valid_dir(fs_path: str) -> Optional[str]:
-    """
-    Check if the given file system path is a valid directory.
-    Args:
-        fs_path (str): The file system path to check.
-
-    Returns:
-        Optional[str]: Resolved path if it is a valid directory, otherwise None.
-    """
     path = Path(fs_path).resolve()
     if path.is_dir():
         return str(path)
@@ -92,7 +84,7 @@ def hashify(value: Union[str, bytes]) -> str:
 ########################
 
 
-class CustomEncoder(json.JSONEncoder):
+class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (str, int, bool, type(None))):
             return obj

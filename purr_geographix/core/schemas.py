@@ -4,13 +4,17 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
-class SetupBase(BaseModel):
-    file_depot: str
+class SettingsBase(BaseModel):
+    file_depot: Optional[str] = None
 
 
-class Setup(SetupBase):
+class Settings(SettingsBase):
     class Config:
         from_attributes = True
+
+
+class FileDepot(BaseModel):
+    file_depot: Optional[str] = None
 
 
 # class Coordinates(BaseModel):
@@ -62,18 +66,14 @@ class Repo(RepoBase):
         from_attributes = True
 
 
-class SetupWithRepos(BaseModel):
-    setup: Setup
-    repos: List[Repo]
+class RepoMinimal(BaseModel):
+    id: str
+    name: str
+    fs_path: str
+    well_count: int
 
-
-# class Setup(BaseModel):
-#     file_depot: str
-#
-#
-# class SetupCreate(Setup):
-#     pass
-#
+    class Config:
+        from_attributes = True
 
 
 class TaskStatus(str, Enum):
