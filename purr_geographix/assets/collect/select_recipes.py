@@ -250,7 +250,11 @@ VECTOR_LOG = {
 }
 
 WELL = {
-    "primary": {"table_name": "well", "index_col": "uwi"},
+    "primary": {
+        "table_name": "well",
+        "index_col": "uwi",
+        "excluded_cols": ["gx_dev_well_blob"],
+    },
 }
 
 ZONE = {
@@ -274,7 +278,7 @@ ZONE = {
     ],
 }
 
-templates = {
+recipes = {
     "completion": COMPLETION,
     "core": CORE,
     "dst": DST,

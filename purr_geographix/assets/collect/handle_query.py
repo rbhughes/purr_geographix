@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from purr_geographix.core.database import get_db
 from purr_geographix.core.crud import get_repo_by_id, get_file_depot
-from purr_geographix.assets.collect.select_templates import templates
+from purr_geographix.assets.collect.select_recipes import recipes
 from core.util import (
     async_wrap,
     datetime_formatter,
@@ -69,13 +69,15 @@ def build_subquery_clause(index_col, subquery, subconditions, uwi_query):
 def read_sql_table_chunked(
         conn,
         uwi_query,
-        table_name,
-        index_col,
-        subquery=None,
-        subconditions=None,
-        conditions=None,
+        portion,
         chunksize=10000,
 ):
+    table_name = portion["table_name"]
+    index_col = portion["index_col"]
+    subquery = portion.get("subquery", None)
+    subconditions = portion.get("subconditions", [])
+    conditions = portion.get("conditions", [])
+
     where_clause = build_where_clause(
         index_col, subquery, subconditions, conditions, uwi_query
     )
@@ -147,15 +149,12 @@ def read_sql_table_chunked(
 def collect_and_assemble_docs(args):
     conn = args["conn"]
     uwi_query = args.get("uwi_query", None)
+    recipe = args["recipe"]
 
     primary_chunks = read_sql_table_chunked(
         conn,
         uwi_query,
-        table_name=args["primary"]["table_name"],
-        index_col=args["primary"]["index_col"],
-        subquery=args["primary"].get("subquery", None),
-        subconditions=args["primary"].get("subconditions", []),
-        conditions=args["primary"].get("conditions", []),
+        portion=recipe["primary"],
     )
 
     records = []
@@ -163,20 +162,18 @@ def collect_and_assemble_docs(args):
         if primary_chunk.empty:
             continue
 
-        primary_chunk.set_index(args["primary"]["index_col"], drop=False, inplace=True)
+        primary_chunk.set_index(
+            recipe["primary"]["index_col"], drop=False, inplace=True
+        )
 
         singles_dict = {}
-        if "singles" in args:
-            for single in args["singles"]:
+        if "singles" in recipe:
+            for single in recipe["singles"]:
                 orig_index_col = single["index_col"]
                 single_chunks = read_sql_table_chunked(
                     conn,
                     uwi_query,
-                    table_name=single["table_name"],
-                    index_col=single["index_col"],
-                    subquery=single.get("subquery", None),
-                    subconditions=single.get("subconditions", []),
-                    conditions=single.get("conditions", []),
+                    portion=single,
                 )
                 single_chunk = next(single_chunks, pd.DataFrame())
                 if not single_chunk.empty:
@@ -190,21 +187,17 @@ def collect_and_assemble_docs(args):
                     singles_dict[single["table_name"]] = single_chunk.to_dict(
                         orient="index"
                     )
-                # essential for when index_col != "uwi" and chunksize is lower than count
+                # when index_col != "uwi" and chunksize is lower than count
                 single["index_col"] = orig_index_col
 
         rollups_dict = {}
-        if "rollups" in args:
-            for rollup in args["rollups"]:
+        if "rollups" in recipe:
+            for rollup in recipe["rollups"]:
                 orig_index_col = rollup["index_col"]
                 rollup_chunks = read_sql_table_chunked(
                     conn,
                     uwi_query,
-                    table_name=rollup["table_name"],
-                    index_col=rollup["index_col"],
-                    subquery=rollup.get("subquery", None),
-                    subconditions=rollup.get("subconditions", []),
-                    conditions=rollup.get("conditions", []),
+                    portion=rollup,
                 )
                 rollup_chunk = next(rollup_chunks, pd.DataFrame())
                 if not rollup_chunk.empty:
@@ -223,11 +216,11 @@ def collect_and_assemble_docs(args):
                     )
                     rollups_dict[rollup["table_name"]] = r_agg
 
-                # for when index_col != "uwi" and chunksize is lower than count
+                # when index_col != "uwi" and chunksize is lower than count
                 rollup["index_col"] = orig_index_col
 
         for idx, row in primary_chunk.iterrows():
-            record = {args["primary"]["table_name"]: row.to_dict()}
+            record = {recipe["primary"]["table_name"]: row.to_dict()}
 
             record["purr_id"] = "_".join(
                 [args["repo_id"], args["asset"], record["well"]["uwi"]]
@@ -268,13 +261,14 @@ def export_json(records, repo_id, asset):
 # routes-assets, but this quickly clobbers browsers and is a generally bad idea.
 async def selector(repo_id: str, asset: str, uwi_query: str = None):
     db = next(get_db())
-    template = templates[asset]
+    template = recipes[asset]
     repo = get_repo_by_id(db, repo_id)
     db.close()
     conn = repo.conn
 
     collection_args = {
-        **template,
+        # **template,
+        "recipe": recipes[asset],
         "repo_id": repo_id,
         "asset": asset,
         "conn": conn,

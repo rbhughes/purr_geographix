@@ -76,7 +76,7 @@ task_storage: Dict[str, schemas.AssetCollectionResponse] = {}
 
 
 async def process_asset_collection(
-        task_id: str, repo_id: str, asset: str, uwi_query: str
+    task_id: str, repo_id: str, asset: str, uwi_query: str
 ):
     try:
         task_storage[task_id].task_status = schemas.TaskStatus.IN_PROGRESS
@@ -96,7 +96,7 @@ async def process_asset_collection(
     response_model=schemas.AssetCollectionResponse,
     summary="Check asset collection status",
     description="The asset collection task may take several minutes. Use this "
-                "to periodically check the job status.",
+    "to periodically check the job status.",
 )
 async def get_asset_collect_status(task_id: str):
     if task_id not in task_storage:
@@ -112,14 +112,14 @@ async def get_asset_collect_status(task_id: str):
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def asset_collection(
-        repo_id: str = Path(..., description="repo_id"),
-        asset: AssetTypeEnum = Path(..., description="asset type"),
-        uwi_query: str = Query(
-            None,
-            min_length=3,
-            description="Enter full or partial uwi(s); use * or % as wildcard."
-                        "Separate UWIs with spaces or commas. Leave blank to select all.",
-        ),
+    repo_id: str = Path(..., description="repo_id"),
+    asset: AssetTypeEnum = Path(..., description="asset type"),
+    uwi_query: str = Query(
+        None,
+        min_length=3,
+        description="Enter full or partial uwi(s); use * or % as wildcard."
+        "Separate UWIs with spaces or commas. Leave blank to select all.",
+    ),
 ):
     RepoId.validate_repo_id(repo_id)
     asset = asset.value
@@ -146,6 +146,7 @@ async def asset_collection(
         )
     )
     return new_collect
+
 
 # @router.post(
 #     "/collect_data/{repo_id}/{asset}",

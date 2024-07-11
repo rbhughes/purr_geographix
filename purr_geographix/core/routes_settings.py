@@ -91,7 +91,7 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
     response_model=schemas.RepoReconResponse,
     summary="Crawl for repos",
     description="Provide a top-level 'recon_root' path (i.e. Project Home) "
-                "to scan for GeoGraphix project repos. Results are saved and used for future scans.",
+    "to scan for GeoGraphix project repos. Results are saved and used for future scans.",
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def run_repo_recon(recon_root: str, ggx_host: str = "localhost"):
@@ -121,7 +121,7 @@ async def run_repo_recon(recon_root: str, ggx_host: str = "localhost"):
     response_model=schemas.RepoReconResponse,
     summary="Check status of repo recon task",
     description="The repo_recon task may take several minutes. Use this to "
-                "periodically check the job status.",
+    "periodically check the job status.",
 )
 async def get_repo_recon_status(task_id: str):
     if task_id not in task_storage:
