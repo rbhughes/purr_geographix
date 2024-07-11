@@ -56,6 +56,9 @@ class AssetTypeEnum(str, Enum):
 
 
 def parse_uwis(uwis: str) -> str:
+    if uwis is None:
+        return uwis
+
     try:
         cleaned = uwis.strip()
         split = [
@@ -64,7 +67,6 @@ def parse_uwis(uwis: str) -> str:
         processed = [item.replace("*", "%").replace("'", "''") for item in split]
         return "|".join(processed)
     except Exception as e:
-        print(e)
         return uwis
 
 
@@ -79,9 +81,9 @@ async def process_asset_collection(
     try:
         task_storage[task_id].task_status = schemas.TaskStatus.IN_PROGRESS
         res = await selector(repo_id, asset, uwi_query)
-        print("........")
-        # print(res)
-        print("........")
+        print("AAAAAAAAAAAAAAAAAAAAAAAA")
+        print(res)
+        print("AAAAAAAAAAAAAAAAAAAAAAAA")
         task_storage[task_id].task_status = schemas.TaskStatus.COMPLETED
         return res
     except Exception as e:
@@ -107,7 +109,7 @@ async def get_asset_collect_status(task_id: str):
     response_model=schemas.AssetCollectionResponse,
     summary="get asset data",
     description="some kinda description",
-    # status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def asset_collection(
         repo_id: str = Path(..., description="repo_id"),
@@ -143,7 +145,6 @@ async def asset_collection(
             uwi_query,
         )
     )
-
     return new_collect
 
 # @router.post(

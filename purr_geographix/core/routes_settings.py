@@ -74,6 +74,7 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
         repos = await repo_recon(recon_root, ggx_host)
         print("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
         for r in repos:
+            print(r)
             print(json.dumps(r, indent=4))
         print("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
 
@@ -109,6 +110,8 @@ async def run_repo_recon(recon_root: str, ggx_host: str = "localhost"):
     )
     task_storage[task_id] = new_repo_recon
     # do not await create_task, or it will block the response
+
+    # noinspection PyAsyncCall
     asyncio.create_task(process_repo_recon(task_id, valid_recon_root, ggx_host))
     return new_repo_recon
 

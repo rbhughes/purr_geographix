@@ -3,7 +3,9 @@ import re
 from pathlib import Path
 from retry import retry
 from typing import Any, Dict, List, Union
-from core.typeish import SQLAnywhereConn
+
+
+# from core.typeish import SQLAnywhereConn
 
 
 class RetryException(Exception):
@@ -53,8 +55,8 @@ def db_exec(
 
     """
 
-    if isinstance(conn, SQLAnywhereConn):
-        conn = conn.to_dict()
+    # if isinstance(conn, SQLAnywhereConn):
+    #     conn = conn.to_dict()
 
     try:
         with pyodbc.connect(**conn) as connection:

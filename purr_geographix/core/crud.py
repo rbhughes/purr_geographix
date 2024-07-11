@@ -13,9 +13,8 @@ def get_settings(db: Session):
 
 
 def get_file_depot(db: Session):
-    settings = db.query(models.Settings).first()
     result = db.query(models.Settings.file_depot).first()
-    return result
+    return result.file_depot
 
 
 def init_file_depot(db: Session):
@@ -48,6 +47,7 @@ def upsert_repos(db: Session, repos: List[models.Repo]):
     db.execute(stmt, repos)
     db.commit()
     ids = [repo["id"] for repo in repos]
+    # ids = [repo.id for repo in repos]
     updated_repos = db.query(models.Repo).filter(models.Repo.id.in_(ids)).all()
     return updated_repos
 

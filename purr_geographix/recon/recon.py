@@ -4,10 +4,11 @@ from purr_geographix.core.crud import upsert_repos
 from purr_geographix.core.database import get_db
 from core.sqlanywhere import make_conn_params
 from core.util import generate_repo_id, async_wrap
-from core.typeish import validate_repo
 from purr_geographix.recon.epsg import epsg_codes
 from purr_geographix.recon.repo_db import well_counts, get_polygon
 from purr_geographix.recon.repo_fs import network_repo_scan, dir_stats, repo_mod
+
+from purr_geographix.core.schemas import Repo
 
 
 async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
@@ -16,7 +17,7 @@ async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
     2. create initial repo_base dict for each
     3. define and run augment functions to add more stuff to each repo_base
     4. validate and ensure that sqlite can digest dicts and datetime
-    5. change the datetimes back to string to permit json.dumps
+    5. reformat repo.repo_mod to string to permit json serialization
 
     Args:
         recon_root: A directory path (project home) containing GeoGraphix repos
@@ -39,17 +40,16 @@ async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
 
     repos = await asyncio.gather(*[update_repo(repo) for repo in repo_list])
 
-    validated_repo_dicts = [validate_repo(r).to_dict() for r in repos]
+    valid_repo_dicts = [Repo(**r).dict() for r in repos]
 
-    # db = get_db_instance()
     db = next(get_db())
-    upsert_repos(db, validated_repo_dicts)
+    upsert_repos(db, valid_repo_dicts)
     db.close()
 
-    return [
-        {**d, "repo_mod": d["repo_mod"].strftime("%Y-%m-%d %H:%M:%S")}
-        for d in validated_repo_dicts
-    ]
+    for r in valid_repo_dicts:
+        r["repo_mod"] = r["repo_mod"].strftime("%Y-%m-%d %H:%M:%S")
+
+    return valid_repo_dicts
 
 
 def create_repo_base(rp: str, ggx_host: str):

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import pyodbc
 import pandas as pd
@@ -7,6 +8,7 @@ from purr_geographix.core.database import get_db
 from purr_geographix.core.crud import get_repo_by_id, get_file_depot
 from purr_geographix.assets.collect.select_templates import templates
 from core.util import (
+    async_wrap,
     datetime_formatter,
     safe_numeric,
     timestamp_filename,
@@ -162,7 +164,6 @@ def collect_and_assemble_docs(args):
             continue
 
         primary_chunk.set_index(args["primary"]["index_col"], drop=False, inplace=True)
-        print("MADE IT HERE 0")
 
         singles_dict = {}
         if "singles" in args:
@@ -185,12 +186,10 @@ def collect_and_assemble_docs(args):
                     single_chunk.set_index(
                         single["index_col"], drop=False, inplace=True
                     )
-                    print("MADE IT HERE 1")
                     single_chunk = single_chunk.rename(columns={"uwi": "uwi_link"})
                     singles_dict[single["table_name"]] = single_chunk.to_dict(
                         orient="index"
                     )
-                    print("MADE IT HERE 2")
                 # essential for when index_col != "uwi" and chunksize is lower than count
                 single["index_col"] = orig_index_col
 
@@ -215,7 +214,6 @@ def collect_and_assemble_docs(args):
                     rollup_chunk.set_index(
                         rollup["index_col"], drop=False, inplace=True
                     )
-                    print("MADE IT HERE 2")
                     rollup_chunk = rollup_chunk.rename(columns={"uwi": "uwi_link"})
                     group_by = rollup["group_by"]
                     r_agg = (
@@ -246,11 +244,15 @@ def collect_and_assemble_docs(args):
 
 
 ##############################################################################
+async def snooze():
+    await asyncio.sleep(20)
+    return "done"
 
 
 def export_json(records, repo_id, asset):
     db = next(get_db())
     file_depot = get_file_depot(db)
+    db.close()
     depot_path = Path(file_depot)
 
     jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
@@ -268,6 +270,7 @@ async def selector(repo_id: str, asset: str, uwi_query: str = None):
     db = next(get_db())
     template = templates[asset]
     repo = get_repo_by_id(db, repo_id)
+    db.close()
     conn = repo.conn
 
     collection_args = {
@@ -277,11 +280,13 @@ async def selector(repo_id: str, asset: str, uwi_query: str = None):
         "conn": conn,
         "uwi_query": uwi_query,
     }
-    records = collect_and_assemble_docs(collection_args)
+
+    async_collect_and_assemble_docs = async_wrap(collect_and_assemble_docs)
+    records = await async_collect_and_assemble_docs(collection_args)
 
     if len(records) > 0:
-        summary = export_json(records, repo_id, asset)
+        async_export_json = async_wrap(export_json)
+        summary = await async_export_json(records, repo_id, asset)
         return summary
-
     else:
         return "Query returned no results"

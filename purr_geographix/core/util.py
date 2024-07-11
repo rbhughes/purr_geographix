@@ -11,16 +11,12 @@ from pathlib import Path
 from typing import Optional, Union
 
 
-def async_wrap(func):
+def async_wrap(func: callable):
     """
     Decorator to allow running a synchronous function in a separate thread.
-
-    Args:
-        func (callable): The synchronous function to be decorated.
-
-    Returns:
-        callable: A new asynchronous function that runs the original synchronous
-        function in an executor.
+    :param func: (callable) The synchronous function to be decorated.
+    :return: callable: A new asynchronous function that runs the original
+        synchronous function in an executor.
     """
 
     @wraps(func)
@@ -43,14 +39,12 @@ def is_valid_dir(fs_path: str) -> Optional[str]:
 
 def generate_repo_id(fs_path: str):
     """
-    Construct a name + hash id using the pathlib Path. First three chars are
-    from the name, last six from a hash of the path:
-    //scarab/ggx_projects\blank_us_nad27_mean ~~> "BLA_0F0588"
+    Construct a name + hash id using Path. First three chars are from the name,
+    last six from a hash of the path, ex:
+        //scarab/ggx_projects\blank_us_nad27_mean ~~> "BLA_0F0588"
     Path strings are lowercased to standardize the hash.
-
     NOTE: Repos resolved via UNC path vs. drive letter will get different IDs.
     This is intentional.
-
     :param fs_path: full path to a repo
     :return: unique id string
     """
@@ -62,22 +56,11 @@ def generate_repo_id(fs_path: str):
 
 
 def hashify(value: Union[str, bytes]) -> str:
-    """
-    Calculate the UUID-like hash string for a given string/byte sequence.
-
-    Args:
-        value (Union[str, bytes]): The input value to be hashed. If a string
-        is provided, it will be converted to bytes using UTF-8 encoding.
-
-    Returns:
-        str: The UUID5 hash of the input value as a string.
-    """
     if isinstance(value, str):
         value = value.lower().encode("utf-8")
-
-    uuid_obj = uuid.uuid5(
-        uuid.NAMESPACE_OID, value.decode("utf-8") if isinstance(value, bytes) else value
-    )
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    uuid_obj = uuid.uuid5(uuid.NAMESPACE_OID, value)
     return str(uuid_obj)
 
 
@@ -115,14 +98,14 @@ class CustomJSONEncoder(json.JSONEncoder):
                 return str(obj)
 
     def encode(self, obj):
-        def nan_to_null(obj):
-            if isinstance(obj, float) and np.isnan(obj):
+        def nan_to_null(o):
+            if isinstance(o, float) and np.isnan(o):
                 return None
-            elif isinstance(obj, dict):
-                return {k: nan_to_null(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [nan_to_null(v) for v in obj]
-            return obj
+            elif isinstance(o, dict):
+                return {k: nan_to_null(v) for k, v in o.items()}
+            elif isinstance(o, list):
+                return [nan_to_null(v) for v in o]
+            return o
 
         return json.dumps(nan_to_null(self.default(obj)), indent=4)
 
@@ -138,12 +121,22 @@ def datetime_formatter(format_string="%Y-%m-%dT%H:%M:%S"):
     return format_datetime
 
 
+# def safe_numeric(x):
+#     if pd.isna(x) or x == "":
+#         return None
+#     try:
+#         return pd.to_numeric(x, errors="coerce")
+#     except:
+#         return None
+
+
 def safe_numeric(x):
     if pd.isna(x) or x == "":
         return None
     try:
-        return pd.to_numeric(x, errors="coerce")
-    except:
+        result = pd.to_numeric(x, errors="coerce")
+        return None if pd.isna(result) else result
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
