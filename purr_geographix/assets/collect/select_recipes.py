@@ -4,6 +4,7 @@ COMPLETION = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_completion",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -21,6 +22,7 @@ CORE = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_core",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -42,6 +44,7 @@ DST = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_test",
         "subconditions": ["__uwi_sub__", "test_type = 'DST'"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -77,6 +80,7 @@ FORMATION = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_formation",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -93,6 +97,7 @@ IP = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_test",
         "subconditions": ["test_type = 'IP'", "__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -128,6 +133,7 @@ PERFORATION = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_perforation",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -145,6 +151,7 @@ PRODUCTION = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_cumulative_production",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -167,6 +174,7 @@ RASTER_LOG = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(well_id) AS uwi FROM log_image_reg_log_section",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -188,6 +196,7 @@ SURVEY = {
             "SELECT DISTINCT(uwi) FROM well_dir_proposed_srvy_station"
         ),
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     # "singles": [
     #     {
@@ -209,6 +218,7 @@ SURVEY = {
             "table_name": "well_dir_proposed_srvy",
             "index_col": "uwi",
             "group_by": "uwi",
+            "excluded_cols": ["gx_proposed_well_blob"],
         },
         {
             "table_name": "well_dir_srvy_station",
@@ -223,12 +233,16 @@ SURVEY = {
     ],
 }
 
+# gx_well_curve_values.curve_values are duplicated
+# gx_well_curveset."import date" has a (stupid) space in the column name
+# TODO: wrap "import date" in brackets: [import date] in handle_query
 VECTOR_LOG = {
     "primary": {
         "table_name": "well",
         "index_col": "uwi",
         "subquery": "SELECT uwi FROM gx_well_curve",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {
@@ -240,11 +254,13 @@ VECTOR_LOG = {
             "table_name": "gx_well_curveset",
             "index_col": "wellid",
             "group_by": "uwi",
+            "excluded_cols": ["import date"],
         },
         {
             "table_name": "gx_well_curve_values",
             "index_col": "wellid",
             "group_by": "uwi",
+            "excluded_cols": ["curve_values"],
         },
     ],
 }
@@ -263,6 +279,7 @@ ZONE = {
         "index_col": "uwi",
         "subquery": "SELECT DISTINCT(uwi) FROM well_zone_interval",
         "subconditions": ["__uwi_sub__"],
+        "excluded_cols": ["gx_dev_well_blob"],
     },
     "rollups": [
         {

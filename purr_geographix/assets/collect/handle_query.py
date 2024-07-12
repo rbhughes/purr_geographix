@@ -77,6 +77,7 @@ def read_sql_table_chunked(
     subquery = portion.get("subquery", None)
     subconditions = portion.get("subconditions", [])
     conditions = portion.get("conditions", [])
+    excluded_cols = portion.get("excluded_cols", [])
 
     where_clause = build_where_clause(
         index_col, subquery, subconditions, conditions, uwi_query
@@ -86,10 +87,10 @@ def read_sql_table_chunked(
         with pyodbc.connect(**conn) as cn:
             cursor = cn.cursor()
 
-            # NOTE: columns set to lower()
             return {
                 x.column_name.lower(): x.type_name
                 for x in cursor.columns(table=table_name)
+                if x.column_name.lower() not in excluded_cols
             }
 
     col_mappings = get_column_mappings()
@@ -101,8 +102,9 @@ def read_sql_table_chunked(
         while True:
 
             query = (
-                f"SELECT TOP {chunksize} START AT {start_at + 1} * FROM "
-                f"{table_name}  {where_clause}  ORDER BY {index_col} "
+                f"SELECT TOP {chunksize} START AT {start_at + 1} "
+                f"{",".join(columns)} FROM {table_name} "
+                f"{where_clause} ORDER BY {index_col} "
             )
 
             print(query)
@@ -261,13 +263,11 @@ def export_json(records, repo_id, asset):
 # routes-assets, but this quickly clobbers browsers and is a generally bad idea.
 async def selector(repo_id: str, asset: str, uwi_query: str = None):
     db = next(get_db())
-    template = recipes[asset]
     repo = get_repo_by_id(db, repo_id)
     db.close()
     conn = repo.conn
 
     collection_args = {
-        # **template,
         "recipe": recipes[asset],
         "repo_id": repo_id,
         "asset": asset,
