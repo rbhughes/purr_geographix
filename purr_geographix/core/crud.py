@@ -1,9 +1,11 @@
+import tempfile
+from datetime import datetime
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import insert, update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-import tempfile
-from typing import List
 import purr_geographix.core.models as models
+from purr_geographix.core.logger import logger
 
 
 def get_settings(db: Session):
@@ -21,7 +23,7 @@ def init_file_depot(db: Session):
     file_depot = db.query(models.Settings.file_depot).first()
     if file_depot is None:
         temp_loc = tempfile.gettempdir()
-        print("(Re)initializing file_depot to:", temp_loc)
+        logger.info("(Re)initializing file_depot to:", temp_loc)
         stmt = insert(models.Settings).values(file_depot=temp_loc)
         db.execute(stmt)
         db.commit()
@@ -65,3 +67,12 @@ def get_repo_by_id(db: Session, repo_id: str):
 def fetch_repo_ids(db: Session) -> List[str]:
     repo_ids = db.query(models.Repo.id).all()
     return [repo_id[0] for repo_id in repo_ids]
+
+# def insert_error(db: Session, repo_id: str, error: str):
+#     problem = models.Problems(
+#         repo_id=repo_id, error=error, created_at=datetime.utcnow()
+#     )
+#     db.add(problem)
+#     db.commit()
+#     db.refresh(problem)
+#     return problem

@@ -7,7 +7,6 @@ from core.util import generate_repo_id, async_wrap
 from purr_geographix.recon.epsg import epsg_codes
 from purr_geographix.recon.repo_db import well_counts, get_polygon
 from purr_geographix.recon.repo_fs import network_repo_scan, dir_stats, repo_mod
-
 from purr_geographix.core.schemas import Repo
 
 
@@ -58,7 +57,6 @@ def create_repo_base(rp: str, ggx_host: str):
     """
     return {
         "id": generate_repo_id(rp),
-        # "id": hashify(rp),
         "active": True,
         "name": Path(rp).name,
         "fs_path": str(Path(rp)),

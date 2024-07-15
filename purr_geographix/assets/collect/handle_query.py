@@ -238,13 +238,7 @@ def collect_and_assemble_docs(args):
     return records
 
 
-##############################################################################
-async def snooze():
-    await asyncio.sleep(20)
-    return "done"
-
-
-def export_json(records, repo_id, asset):
+def export_json(records, repo_id, asset) -> str:
     db = next(get_db())
     file_depot = get_file_depot(db)
     db.close()
@@ -259,9 +253,7 @@ def export_json(records, repo_id, asset):
     return f"Exported {len(records)} docs to: {out_file}"
 
 
-# Want to send json directly? No you don't. See CustomJSONResponse in
-# routes-assets, but this quickly clobbers browsers and is a generally bad idea.
-async def selector(repo_id: str, asset: str, uwi_query: str = None):
+async def selector(repo_id: str, asset: str, uwi_query: str = None) -> str:
     db = next(get_db())
     repo = get_repo_by_id(db, repo_id)
     db.close()

@@ -1,10 +1,11 @@
 import asyncio
 import hashlib
-import uuid
 import json
 import pandas as pd
 import numpy as np
+import socket
 import time
+import uuid
 from datetime import datetime, date
 from functools import wraps, partial
 from pathlib import Path
@@ -53,6 +54,10 @@ def generate_repo_id(fs_path: str):
     prefix = fp.name.upper()[:3]
     suffix = hashlib.md5(str(fp).lower().encode()).hexdigest()[:6]
     return f"{prefix}_{suffix}".upper()
+
+
+def hostname():
+    return socket.gethostname().lower()
 
 
 def hashify(value: Union[str, bytes]) -> str:

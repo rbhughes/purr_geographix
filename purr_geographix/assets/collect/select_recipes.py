@@ -167,7 +167,7 @@ PRODUCTION = {
     ],
 }
 
-# NOTE: we skip log_depth_cal_vec.vid = log_image_reg_log_section.log_depth_cal_vid
+# skip log_depth_cal_vec.vid = log_image_reg_log_section.log_depth_cal_vid
 RASTER_LOG = {
     "primary": {
         "table_name": "well",

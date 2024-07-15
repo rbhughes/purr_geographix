@@ -1,6 +1,7 @@
 import numpy as np
 import alphashape
 from core.sqlanywhere import db_exec
+from purr_geographix.core.logger import logger
 
 NOTNULL_LONLAT = (
     "SELECT surface_longitude AS lon, surface_latitude AS lat FROM well "
@@ -86,6 +87,12 @@ def well_counts(repo_base) -> dict:
 
     counts = {}
 
+    if isinstance(res, Exception):
+        logger.error({"context": repo_base, "error": res})
+        for i, k in enumerate(counter_sql.keys()):
+            counts[k] = None
+        return counts
+
     for i, k in enumerate(counter_sql.keys()):
         counts[k] = res[i][0]["tally"] or 0
 
@@ -110,8 +117,10 @@ def concave_hull(points, alpha=0.5):
     # Compute the alpha shape
     alpha_shape = alphashape.alphashape(points_array, alpha)
 
-    # Extract the vertices of the alpha shape
-    concave_hull_vertices = [list(coord) for coord in alpha_shape.exterior.coords]
+    if alpha_shape.is_empty:
+        concave_hull_vertices = None
+    else:
+        concave_hull_vertices = [list(coord) for coord in alpha_shape.exterior.coords]
 
     return concave_hull_vertices
 
@@ -137,10 +146,24 @@ def get_polygon(repo_base) -> dict:
     points = [[r["lon"], r["lat"]] for r in res]
 
     if len(points) < 3:
-        print(f"Too few valid Lon/Lat points for hull: {repo_base["name"]}")
+        logger.error(
+            {
+                "context": repo_base,
+                "error": f"Too few valid Lon/Lat for hull: {repo_base["name"]}",
+            }
+        )
         return {"polygon": None}
 
     hull = concave_hull(points)
+    if hull is None:
+        logger.error(
+            {
+                "context": repo_base,
+                "error": "The concave_hull was null, suggesting pre-SQLA17",
+            }
+        )
+        return {"polygon": None}
+
     first_point = hull[0]
     hull.append(first_point)
 

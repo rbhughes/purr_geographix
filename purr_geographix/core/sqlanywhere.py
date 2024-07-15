@@ -16,9 +16,12 @@ class RetryException(Exception):
 SQLANY_DRIVER = "SQL Anywhere 17"
 
 
+# SQLANY_DRIVER = "SQL Anywhere for Discovery"
+
+
 @retry(RetryException, tries=5)
 def db_exec(
-    conn: Union[dict, "SQLAnywhereConn"], sql: Union[str, List[str]]
+        conn: Union[dict, "SQLAnywhereConn"], sql: Union[str, List[str]]
 ) -> Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]]:
     """
     This function connects to a SQLAnywhere database using the provided connection
@@ -85,6 +88,10 @@ def db_exec(
         if re.search(r"Database name not unique", str(oe)):
             conn.pop("dbf")
             raise RetryException from oe
+    except pyodbc.ProgrammingError as pe:
+        if re.search(r"Table .* not found", str(pe)):
+            return pe
+
     except Exception as ex:
         raise ex
 

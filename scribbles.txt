@@ -1,3 +1,20 @@
+2024-07-12 | maybe send streaming response
+If some future version opts to send a JSON response, use CustomJSONResponse:
+    class CustomJSONResponse(JSONResponse):
+        def render(self, content: any) -> bytes:
+            return json.dumps(
+                content,
+                ensure_ascii=False,
+                allow_nan=False,
+                indent=None,
+                separators=(",", ":"),
+                cls=CustomEncoder,
+            ).encode("utf-8")
+
+Maybe a streaming response makes more sense?
+https://stackoverflow.com/questions/75740652/fastapi-streamingresponse-not-streaming
+
+
 
 2024-07-11 | xformers from purrio_geographix
 No longer needed?:
