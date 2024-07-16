@@ -1,6 +1,8 @@
 import os
 import re
+import xml.etree.ElementTree
 import xml.etree.ElementTree as ET
+from purr_geographix.core.logger import logger
 
 geodetics = [
     ("gcs_north_american_1927", "d_north_american_1927", 4267),
@@ -528,16 +530,25 @@ def get_wkts(fs_path: str) -> dict:
     :param fs_path: Path to project repo
     :return: storage and display WKT
     """
-    ggx_xml = os.path.join(fs_path, "Project.ggx.xml")
-    root = ET.parse(ggx_xml).getroot()
+    try:
+        ggx_xml = os.path.join(fs_path, "Project.ggx.xml")
+        root = ET.parse(ggx_xml).getroot()
 
-    storage_wkt = root.find("./Project/StorageCoordinateSystem/ESRI").text
-    display_wkt = root.find("./Project/DisplayCoordinateSystem/ESRI").text
+        storage_wkt = root.find("./Project/StorageCoordinateSystem/ESRI").text
+        display_wkt = root.find("./Project/DisplayCoordinateSystem/ESRI").text
 
-    return {
-        "storage_wkt": scrub(storage_wkt),
-        "display_wkt": scrub(display_wkt),
-    }
+        return {
+            "storage_wkt": scrub(storage_wkt),
+            "display_wkt": scrub(display_wkt),
+        }
+    except FileNotFoundError as fnfe:
+        logger.error(f"epsg missing file (probably Project.ggx.xml): {fnfe}")
+    except xml.etree.ElementTree.ParseError as pe:
+        logger.error(f"epsg XML parse error: {pe}")
+    except Exception as e:
+        logger.error(f"Mystery epsg error: {e}")
+
+    return {"storage_wkt": "unknown", "display_wkt": "unknown"}
 
 
 def epsg_codes(repo_base) -> dict:
@@ -546,6 +557,9 @@ def epsg_codes(repo_base) -> dict:
     :param repo_base: A stub repo dict. We just use the fs_path
     :return: ESPG names and codes
     """
+
+    logger.info(f"epsg_codes: {repo_base['fs_path']}")
+
     storage_epsg = 0
     storage_name = "unknown"
     display_epsg = 0

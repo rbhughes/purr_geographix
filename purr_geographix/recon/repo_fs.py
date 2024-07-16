@@ -5,9 +5,10 @@ from datetime import datetime
 from pathlib import Path
 from subprocess import run
 from typing import List
+from purr_geographix.core.logger import logger
 
 
-def is_ggx_project(directory: str) -> bool:
+def looks_like_ggx_project(directory: str) -> bool:
     """
     Determines if a directory looks like a GeoGraphix project by checking for
     SQLAnywhere database files and a Global AOI directory.
@@ -50,7 +51,7 @@ async def walk_dir_for_gxdb(path: str) -> List[str]:
 
     for root, dirs, files in os.walk(root_dir):
         if any(file.endswith("gxdb.db") for file in files):
-            if is_ggx_project(root):
+            if looks_like_ggx_project(root):
                 potential_repos.append(root)
 
     return potential_repos
@@ -71,7 +72,7 @@ async def network_repo_scan(recon_root: str) -> List[str]:
     root_dir = Path(recon_root)
     top_dirs = [str(path) for path in root_dir.iterdir() if path.is_dir()]
 
-    if is_ggx_project(recon_root):
+    if looks_like_ggx_project(recon_root):
         repos = [recon_root]
     else:
         repos = []
@@ -105,6 +106,8 @@ def dir_stats(repo_base) -> dict:
     Returns:
         dict of parsed stdout byte sizes
     """
+    logger.info(f"dir_stats: {repo_base['fs_path']}")
+
     base_dir = Path(__file__).resolve().parent.parent
     du64 = base_dir / "bin" / "du64.exe"
 
@@ -141,6 +144,8 @@ def repo_mod(repo_base) -> dict:
     Returns:
         dict with repo_mod as datetime string
     """
+    logger.info(f"repo_mod: {repo_base['fs_path']}")
+
     last_mod = datetime(1970, 1, 1)
     gxdb_matcher = re.compile(r"gxdb\.db$|gxdb_production\.db$|gxdb\.log$")
 
@@ -157,7 +162,6 @@ def repo_mod(repo_base) -> dict:
                     continue
 
     return {"repo_mod": last_mod.strftime("%Y-%m-%d %H:%M:%S")}
-
 
 # async def main():
 #     import time

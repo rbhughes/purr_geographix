@@ -1,7 +1,9 @@
 import numpy as np
 import alphashape
-from core.sqlanywhere import db_exec
+from core.sqlanywhere import db_exec, make_conn_params
 from purr_geographix.core.logger import logger
+
+# from purr_geographix.core.util import debugger
 
 NOTNULL_LONLAT = (
     "SELECT surface_longitude AS lon, surface_latitude AS lat FROM well "
@@ -58,6 +60,17 @@ WELLS_WITH_VECTOR_LOG = "SELECT COUNT(DISTINCT wellid) AS tally FROM gx_well_cur
 WELLS_WITH_ZONE = "SELECT COUNT(DISTINCT uwi) AS tally FROM well_zone_interval"
 
 
+def check_gxdb(repo_base) -> bool:
+    res = db_exec(repo_base["conn"], "select db_name()")
+    if isinstance(res, Exception):
+        logger.warn(f"Looks like a ggx project but invalid gxdb?: {res}")
+        return False
+    elif isinstance(res, list):
+        return True
+    else:
+        return False
+
+
 def well_counts(repo_base) -> dict:
     """
     Run the SQL counts (above) for each asset data type.
@@ -67,6 +80,7 @@ def well_counts(repo_base) -> dict:
     Returns:
         A dict with each count, named after the keys below
     """
+    logger.info(f"well_counts: {repo_base['fs_path']}")
 
     counter_sql = {
         "well_count": WELLS,
@@ -83,18 +97,29 @@ def well_counts(repo_base) -> dict:
         "wells_with_zone": WELLS_WITH_ZONE,
     }
 
-    res = db_exec(repo_base["conn"], list(counter_sql.values()))
-
     counts = {}
 
-    if isinstance(res, Exception):
-        logger.error({"context": repo_base, "error": res})
-        for i, k in enumerate(counter_sql.keys()):
-            counts[k] = None
-        return counts
+    for key, sql in counter_sql.items():
+        res = db_exec(repo_base["conn"], sql)
 
-    for i, k in enumerate(counter_sql.keys()):
-        counts[k] = res[i][0]["tally"] or 0
+        if isinstance(res, Exception):
+            logger.error({"context": repo_base["fs_path"], "error": res})
+            counts[key] = None
+        else:
+            counts[key] = res[0]["tally"] or 0
+
+    # res = db_exec(repo_base["conn"], list(counter_sql.values()))
+    #
+    # counts = {}
+    #
+    # if isinstance(res, Exception):
+    #     logger.error({"context": repo_base, "error": res})
+    #     for i, k in enumerate(counter_sql.keys()):
+    #         counts[k] = None
+    #     return counts
+    #
+    # for i, k in enumerate(counter_sql.keys()):
+    #     counts[k] = res[i][0]["tally"] or 0
 
     return counts
 
@@ -142,13 +167,20 @@ def get_polygon(repo_base) -> dict:
         dict with hull (List of points)
     """
 
+    logger.info(f"get_polygon: {repo_base['fs_path']}")
+
     res = db_exec(repo_base["conn"], NOTNULL_LONLAT)
+
+    if isinstance(res, Exception):
+        logger.error({"context": repo_base["fs_path"], "error": res})
+        return {"polygon": None}
+
     points = [[r["lon"], r["lat"]] for r in res]
 
     if len(points) < 3:
         logger.error(
             {
-                "context": repo_base,
+                "context": repo_base["fs_path"],
                 "error": f"Too few valid Lon/Lat for hull: {repo_base["name"]}",
             }
         )
@@ -158,7 +190,7 @@ def get_polygon(repo_base) -> dict:
     if hull is None:
         logger.error(
             {
-                "context": repo_base,
+                "context": repo_base["fs_path"],
                 "error": "The concave_hull was null, suggesting pre-SQLA17",
             }
         )

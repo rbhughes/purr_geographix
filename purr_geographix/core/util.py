@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import hashlib
 import json
 import pandas as pd
@@ -9,7 +10,8 @@ import uuid
 from datetime import datetime, date
 from functools import wraps, partial
 from pathlib import Path
-from typing import Optional, Union
+from typing import Callable, Optional, Union
+from purr_geographix.core.logger import logger
 
 
 def async_wrap(func: callable):
@@ -147,3 +149,39 @@ def safe_numeric(x):
 
 def timestamp_filename(repo_id: str, asset: str, ext: str = "json"):
     return f"{repo_id}_{int(time.time())}_{asset}.{ext}".lower()
+
+
+# https://ankitbko.github.io/blog/2021/04/logging-in-python/
+def debugger(func) -> Callable:
+    """
+    Wrapped decorator that logs nearly everything.
+    Just add @debugger decorator.
+    The "name" must match main logging setup since we borrow its setup.
+    You need to restart the worker after modifying .env.
+    :param func: Any function (except generators)
+    :return: Callable wrapper
+    """
+
+    # if os.environ.get("DEBUGGER") != "true":
+    #     return func
+
+    name = "purrio"
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+
+        args_repr = [repr(a) for a in args]
+        kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+        signature = ", ".join(args_repr + kwargs_repr)
+        logger.debug(f"DEBUGGER [{func.__name__}] w/args: {signature}")
+        try:
+            result = func(*args, **kwargs)
+            logger.debug(f"DEBUGGER [{func.__name__}] result: {result}")
+            return result
+        except Exception as e:
+            logger.exception(
+                f"DEBUGGER Exception raised [{func.__name__}]. exception: {str(e)}"
+            )
+            raise e
+
+    return wrapper

@@ -43,6 +43,7 @@ def update_file_depot(db: Session, file_depot: str):
 
 
 def upsert_repos(db: Session, repos: List[models.Repo]):
+    logger.info(f"Upserting {len(repos)} repos")
     stmt = sqlite_insert(models.Repo).values(repos)
     update_dict = {c.name: c for c in stmt.excluded if c.name != "id"}
     stmt = stmt.on_conflict_do_update(index_elements=["id"], set_=update_dict)

@@ -5,7 +5,7 @@ from purr_geographix.core.database import get_db
 from core.sqlanywhere import make_conn_params
 from core.util import generate_repo_id, async_wrap
 from purr_geographix.recon.epsg import epsg_codes
-from purr_geographix.recon.repo_db import well_counts, get_polygon
+from purr_geographix.recon.repo_db import well_counts, get_polygon, check_gxdb
 from purr_geographix.recon.repo_fs import network_repo_scan, dir_stats, repo_mod
 from purr_geographix.core.schemas import Repo
 
@@ -29,6 +29,9 @@ async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
     """
     repo_paths = await network_repo_scan(recon_root)
     repo_list = [create_repo_base(rp, ggx_host) for rp in repo_paths]
+
+    # make another pass to verify gxdb (now that we have a conn)
+    repo_list = [repo_base for repo_base in repo_list if check_gxdb(repo_base)]
 
     augment_funcs = [well_counts, get_polygon, epsg_codes, dir_stats, repo_mod]
 
