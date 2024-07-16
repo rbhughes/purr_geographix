@@ -1,3 +1,90 @@
+2024-07-18 | snippet for timing network scan
+# async def main():
+#     import time
+#
+#     t0 = time.time()
+#     recon_root = r"d:/"
+#
+#     repos = await network_repo_scan(recon_root)
+#     t1 = time.time()
+#
+#     for r in repos:
+#         print(r)
+#     print(t1 - t0)
+#
+#
+# if __name__ == "__main__":
+#     asyncio.run(main())
+
+
+
+2024-07-18 | removed handling lists of SQL to simplify things
+# @retry(RetryException, tries=5)
+# def db_exec(
+#     conn: Union[dict, "SQLAnywhereConn"], sql: Union[str, List[str]]
+# ) -> Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]]:
+#     """
+#     Args:
+#         conn (Union[dict, 'SQLAnywhereConn']):
+#
+#     Returns:
+#         Union[List[Dict[str, Any]], List[List[Dict[str, Any]]]]:
+#     """
+#
+#     # if isinstance(conn, SQLAnywhereConn):
+#     #     conn = conn.to_dict()
+#
+#     try:
+#         with pyodbc.connect(**conn) as connection:
+#             with connection.cursor() as cursor:
+#                 if isinstance(sql, str):
+#                     cursor.execute(sql)
+#
+#                     return [
+#                         dict(zip([col[0] for col in cursor.description], row))
+#                         for row in cursor.fetchall()
+#                     ]
+#
+#                 if isinstance(sql, list):
+#                     results = []
+#                     for s in sql:
+#                         cursor.execute(s)
+#                         results.append(
+#                             [
+#                                 dict(zip([col[0] for col in cursor.description], row))
+#                                 for row in cursor.fetchall()
+#                             ]
+#                         )
+#                     return results
+#
+#     except pyodbc.OperationalError as oe:
+#         if re.search(r"Database name not unique", str(oe)):
+#             conn.pop("dbf")
+#             raise RetryException from oe
+#     except pyodbc.ProgrammingError as pe:
+#         if re.search(r"Table .* not found", str(pe)):
+#             return pe
+#
+#     except Exception as ex:
+#         raise ex
+
+used like this:
+
+    # res = db_exec(repo_base["conn"], list(counter_sql.values()))
+    #
+    # counts = {}
+    #
+    # if isinstance(res, Exception):
+    #     logger.error({"context": repo_base, "error": res})
+    #     for i, k in enumerate(counter_sql.keys()):
+    #         counts[k] = None
+    #     return counts
+    #
+    # for i, k in enumerate(counter_sql.keys()):
+    #     counts[k] = res[i][0]["tally"] or 0
+
+
+
 2024-07-12 | maybe send streaming response
 If some future version opts to send a JSON response, use CustomJSONResponse:
     class CustomJSONResponse(JSONResponse):

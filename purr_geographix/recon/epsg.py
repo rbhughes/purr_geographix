@@ -514,16 +514,32 @@ projections = [
 
 
 def scrub(s: str) -> str:
-    """
-    Utility method to (slightly) clean up epsg display text
-    :param s: input string
-    :return: sanitized string
+    """Utility method to (slightly) clean up epsg display text
+
+    Args:
+        s (str): input string parsed from Project.ggx.xml
+
+    Returns:
+        str: slightly cleaned up string
     """
     underscored = re.sub(r"[ ./_]", "_", str(s))
     return re.sub(r"[-()]", "", underscored)
 
 
 def get_wkts(fs_path: str) -> dict:
+    """Get storage and display string "Well Known Text" from Project.ggx.xml
+
+    Very old projects (<2015) will not have the .xml file. You can sorta get it
+    from the binary project.ggx file, but not reliably. The strings are based
+    on the (now vintage) ESRI dev kit.
+
+    Args:
+        fs_path (str): The fs_path string to project directory
+
+    Returns:
+        dict: storage_wkt and display_wkt
+
+    """
     """
     Extract storage and display string "Well Known Text" from GeoGraphix
     Project.ggx.xml files. Very old projects won't have the .xml file.
@@ -552,12 +568,19 @@ def get_wkts(fs_path: str) -> dict:
 
 
 def epsg_codes(repo_base) -> dict:
-    """
-    Look up storage and display EPSG code and name. Mostly based on epsg.io
-    :param repo_base: A stub repo dict. We just use the fs_path
-    :return: ESPG names and codes
-    """
+    """Make an educated guess on likely storage and display EPSG codes.
 
+    This is mostly based on epsg.io and may vary from whatever madness was used
+    by GeoGraphix + BlueMarble. From what I can tell the spatial functionality
+    in SQLAnywhere is generally not used by Discovery. Any real GIS work should
+    verify things first.
+
+    Args:
+        repo_base (dict): A stub repo dict.
+
+    Returns:
+        dict: ESPG names and codes
+    """
     logger.info(f"epsg_codes: {repo_base['fs_path']}")
 
     storage_epsg = 0

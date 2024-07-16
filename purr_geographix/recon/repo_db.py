@@ -1,6 +1,6 @@
 import numpy as np
 import alphashape
-from core.sqlanywhere import db_exec, make_conn_params
+from core.sqlanywhere import db_exec
 from purr_geographix.core.logger import logger
 
 # from purr_geographix.core.util import debugger
@@ -61,6 +61,14 @@ WELLS_WITH_ZONE = "SELECT COUNT(DISTINCT uwi) AS tally FROM well_zone_interval"
 
 
 def check_gxdb(repo_base) -> bool:
+    """A simple query to see if a SQLAnywhere/gxdb database is accessible
+
+    Args:
+        repo_base (dict): A stub repo dict.
+
+    Returns:
+        bool: True if connection and query were successful, otherwise False
+    """
     res = db_exec(repo_base["conn"], "select db_name()")
     if isinstance(res, Exception):
         logger.warn(f"Looks like a ggx project but invalid gxdb?: {res}")
@@ -72,10 +80,12 @@ def check_gxdb(repo_base) -> bool:
 
 
 def well_counts(repo_base) -> dict:
-    """
-    Run the SQL counts (above) for each asset data type.
+    """Run the SQL counts (above) for each asset data type.
+
+    If SQLAnywhere returns an exception the count = None for that asset type
+
     Args:
-        repo_base: A stub repo dict. We just use the fs_path
+        repo_base (dict): A stub repo dict. We just use the fs_path
 
     Returns:
         A dict with each count, named after the keys below
@@ -107,26 +117,11 @@ def well_counts(repo_base) -> dict:
             counts[key] = None
         else:
             counts[key] = res[0]["tally"] or 0
-
-    # res = db_exec(repo_base["conn"], list(counter_sql.values()))
-    #
-    # counts = {}
-    #
-    # if isinstance(res, Exception):
-    #     logger.error({"context": repo_base, "error": res})
-    #     for i, k in enumerate(counter_sql.keys()):
-    #         counts[k] = None
-    #     return counts
-    #
-    # for i, k in enumerate(counter_sql.keys()):
-    #     counts[k] = res[i][0]["tally"] or 0
-
     return counts
 
 
 def concave_hull(points, alpha=0.5):
-    """
-    Computes a concave hull of a set of points using the alpha shape algorithm.
+    """Computes a concave hull of a set of points using alpha shape.
 
     Args:
         points (list): A list of (lon, lat) surface well locations.
@@ -134,12 +129,9 @@ def concave_hull(points, alpha=0.5):
             Higher values of alpha produce more concave hulls.
 
     Returns:
-        list: A list of (lon, lat) tuples representing the vertices of the concave hull.
+        list: A list of (lon, lat) tuples representing the vertices of the hull.
     """
-    # Convert the input points to a numpy array
     points_array = np.array(points)
-
-    # Compute the alpha shape
     alpha_shape = alphashape.alphashape(points_array, alpha)
 
     if alpha_shape.is_empty:
@@ -151,9 +143,11 @@ def concave_hull(points, alpha=0.5):
 
 
 def get_polygon(repo_base) -> dict:
-    """
+    """Get a list of lat/lon points defining approximate project boundaries.
+
     I had used concave_hull (https://concave-hull.readthedocs.io/en/latest/),
     but it relies on numpy 1.26.4. The latest numpy (2.0.0) breaks it.
+
     This is (obviously) datum agnostic.
 
     The numpy + alphashape concave_hull function above was cobbled together with
@@ -161,7 +155,7 @@ def get_polygon(repo_base) -> dict:
     has a side effect ot excluding (most) crazy out-of-bounds surface locs.
 
     Args:
-        repo_base: A stub repo dict. We just use the fs_path
+        repo_base (dict): A stub repo dict. We just use the fs_path
 
     Returns:
         dict with hull (List of points)
@@ -188,6 +182,7 @@ def get_polygon(repo_base) -> dict:
 
     hull = concave_hull(points)
     if hull is None:
+        # a weird edge case I've only seen in very old <2015 vintage projects
         logger.error(
             {
                 "context": repo_base["fs_path"],

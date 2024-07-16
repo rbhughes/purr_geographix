@@ -47,11 +47,3 @@ class Settings(Base):
         nullable=True,
         server_default="C:/Users/bryan",
     )
-
-# class Problems(Base):
-#     __table_name__ = "problems"
-#
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     repo_id = Column(String)
-#     error = Column(String)
-#     created_at = Column(TIMESTAMP)

@@ -9,9 +9,7 @@ from purr_geographix.core.logger import logger
 
 
 def looks_like_ggx_project(directory: str) -> bool:
-    """
-    Determines if a directory looks like a GeoGraphix project by checking for
-    SQLAnywhere database files and a Global AOI directory.
+    """Check if a directory looks like a GeoGraphix project
 
     Args:
         directory (str): The directory path to check.
@@ -35,10 +33,9 @@ def looks_like_ggx_project(directory: str) -> bool:
 
 
 async def walk_dir_for_gxdb(path: str) -> List[str]:
-    """
-    Recursively crawl a directory and return a list of directory paths that
-    appear to be GeoGraphix projects.
-    (os.walk was about ~20% faster than dir.rglob. YMMV)
+    """A coroutine used to recursively crawl a directory for GGX-like paths
+
+    Using os.walk was about ~20% faster than dir.rglob.
 
     Args:
         path (str): The root directory path to start the crawl.
@@ -58,9 +55,9 @@ async def walk_dir_for_gxdb(path: str) -> List[str]:
 
 
 async def network_repo_scan(recon_root: str) -> List[str]:
-    """
-    Scan the network to locate GeoGraphix projects.
-    (asyncio.gather is simpler has roughly the same performance as dask.bag)
+    """Scan the network to locate GeoGraphix projects.
+
+    Using asyncio.gather is simpler and performed comparable to dask.bag
 
     Args:
         recon_root (str): The root directory path to start the scan.
@@ -84,27 +81,17 @@ async def network_repo_scan(recon_root: str) -> List[str]:
     repos.extend([repo for sublist in all_repos for repo in sublist])
     return list(set(repos))
 
-    # root_dir = Path(recon_root)
-    # top_dirs = [str(path) for path in root_dir.iterdir() if path.is_dir()]
-    #
-    # directories = db.from_sequence(top_dirs, npartitions=10)
-    # # num_parallel_tasks = directories.npartitions
-    # # print(f"Using {num_parallel_tasks} parallel tasks")
-    # all_repos = directories.map(walk_dir_for_gxdb).flatten().compute()
-    # repos = list(set(all_repos))
-    # return repos
-
 
 def dir_stats(repo_base) -> dict:
-    """
+    """Use microsoft's du utility to collect directory size.
+    It's faster than vanilla python.
     https://learn.microsoft.com/en-us/sysinternals/downloads/du
-    Run microsoft's du utility to collect directory size. Faster than python.
 
     Args:
-        repo_base: A stub repo dict. We just use the fs_path
+        repo_base (dict): A stub repo dict. We just use the fs_path
 
     Returns:
-        dict of parsed stdout byte sizes
+        dict of parsed stdout metadata
     """
     logger.info(f"dir_stats: {repo_base['fs_path']}")
 
@@ -132,17 +119,18 @@ def dir_stats(repo_base) -> dict:
 
 
 def repo_mod(repo_base) -> dict:
-    """
-    Walk the project directory to get the latest possible file modification
-    date. We exclude SQLAnywhere files since they are modified simply by making
+    """Walk the project directory to get the latest file modification date.
+
+    We exclude SQLAnywhere files since they are modified simply by making
     an ODBC connection.
-    TODO: optimize this with multi-threading?
+
+    TODO: Needs serious optimization, maybe multi-thread like os.walk?
 
     Args:
-        repo_base: A stub repo dict. We just use the fs_path
+        repo_base (dict): A stub repo dict. We just use the fs_path
 
     Returns:
-        dict with repo_mod as datetime string
+        dict: with repo_mod as datetime string
     """
     logger.info(f"repo_mod: {repo_base['fs_path']}")
 
@@ -162,20 +150,3 @@ def repo_mod(repo_base) -> dict:
                     continue
 
     return {"repo_mod": last_mod.strftime("%Y-%m-%d %H:%M:%S")}
-
-# async def main():
-#     import time
-#
-#     t0 = time.time()
-#     recon_root = r"d:/"
-#
-#     repos = await network_repo_scan(recon_root)
-#     t1 = time.time()
-#
-#     for r in repos:
-#         print(r)
-#     print(t1 - t0)
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(main())

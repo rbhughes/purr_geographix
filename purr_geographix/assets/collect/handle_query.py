@@ -241,8 +241,10 @@ def collect_and_assemble_docs(args):
 def export_json(records, repo_id, asset) -> str:
     db = next(get_db())
     file_depot = get_file_depot(db)
+    print("file_depot", file_depot)
     db.close()
     depot_path = Path(file_depot)
+    print(depot_path)
 
     jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
     json_file = timestamp_filename(repo_id, asset)

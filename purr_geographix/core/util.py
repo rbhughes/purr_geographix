@@ -6,19 +6,21 @@ import pandas as pd
 import numpy as np
 import socket
 import time
-import uuid
 from datetime import datetime, date
 from functools import wraps, partial
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Coroutine, Any
 from purr_geographix.core.logger import logger
 
 
-def async_wrap(func: callable):
-    """
-    Decorator to allow running a synchronous function in a separate thread.
-    :param func: (callable) The synchronous function to be decorated.
-    :return: callable: A new asynchronous function that runs the original
+def async_wrap(func: callable) -> Callable[..., Coroutine[Any, Any, Any]]:
+    """Decorator to allow running a synchronous function in a separate thread.
+
+    Args:
+        func (callable: The synchronous function
+
+    Returns:
+        callable: A new asynchronous function that runs the original
         synchronous function in an executor.
     """
 
@@ -40,16 +42,20 @@ def is_valid_dir(fs_path: str) -> Optional[str]:
         return None
 
 
-def generate_repo_id(fs_path: str):
-    """
-    Construct a name + hash id using Path. First three chars are from the name,
-    last six from a hash of the path, ex:
-        //scarab/ggx_projects\blank_us_nad27_mean ~~> "BLA_0F0588"
-    Path strings are lowercased to standardize the hash.
-    NOTE: Repos resolved via UNC path vs. drive letter will get different IDs.
+def generate_repo_id(fs_path: str) -> str:
+    """Construct a name + hash id: three chars from name + short hash
+
+    Repos resolved via UNC path vs. drive letter will get different IDs.
     This is intentional.
-    :param fs_path: full path to a repo
-    :return: unique id string
+
+    Examples:
+        //scarab/ggx_projects\blank_us_nad27_mean ~~> "BLA_0F0588"
+
+    Args:
+        fs_path (str): Full path to a repo (project) directory.
+
+    Returns:
+        str: Short, unique id that is easier for humans to work with than UUID
     """
     fp = Path(fs_path)
     print(str(fp))
@@ -62,19 +68,25 @@ def hostname():
     return socket.gethostname().lower()
 
 
-def hashify(value: Union[str, bytes]) -> str:
-    if isinstance(value, str):
-        value = value.lower().encode("utf-8")
-    if isinstance(value, bytes):
-        value = value.decode("utf-8")
-    uuid_obj = uuid.uuid5(uuid.NAMESPACE_OID, value)
-    return str(uuid_obj)
+# def hashify(value: Union[str, bytes]) -> str:
+#     if isinstance(value, str):
+#         value = value.lower().encode("utf-8")
+#     if isinstance(value, bytes):
+#         value = value.decode("utf-8")
+#     uuid_obj = uuid.uuid5(uuid.NAMESPACE_OID, value)
+#     return str(uuid_obj)
 
 
 ########################
 
 
 class CustomJSONEncoder(json.JSONEncoder):
+    """
+    A rather overwrought sanitizer for data coming from GeoGraphix projects.
+    We are generally dealing with Windows CP1252 encoding, but there have been
+    generations of exceptions allowed into the gxdb over the years.
+    """
+
     def default(self, obj):
         if isinstance(obj, (str, int, bool, type(None))):
             return obj
@@ -128,16 +140,8 @@ def datetime_formatter(format_string="%Y-%m-%dT%H:%M:%S"):
     return format_datetime
 
 
-# def safe_numeric(x):
-#     if pd.isna(x) or x == "":
-#         return None
-#     try:
-#         return pd.to_numeric(x, errors="coerce")
-#     except:
-#         return None
-
-
 def safe_numeric(x):
+    # see usage in handle_query()
     if pd.isna(x) or x == "":
         return None
     try:
@@ -148,28 +152,37 @@ def safe_numeric(x):
 
 
 def timestamp_filename(repo_id: str, asset: str, ext: str = "json"):
+    """Simple file name generator for JSON exports
+
+    Examples:
+        <repo_id> _ <timestamp> _ <asset> . json
+        nor_bd29a9_1721144912_well.json
+
+    Args:
+        repo_id (str): The repo_id (three-letter + hash)
+        asset (str): The specific (enum) data type from which this data came.
+        ext (Optional[str]): file extension--json for now
+
+    Returns:
+        str: A plausibly unique export file name
+    """
     return f"{repo_id}_{int(time.time())}_{asset}.{ext}".lower()
 
 
-# https://ankitbko.github.io/blog/2021/04/logging-in-python/
-def debugger(func) -> Callable:
-    """
-    Wrapped decorator that logs nearly everything.
-    Just add @debugger decorator.
-    The "name" must match main logging setup since we borrow its setup.
-    You need to restart the worker after modifying .env.
-    :param func: Any function (except generators)
-    :return: Callable wrapper
-    """
+def debugger(func: Callable[..., Any]) -> Callable[..., Any]:
+    """A decorator that can log just about everything. Probably overkill.
 
-    # if os.environ.get("DEBUGGER") != "true":
-    #     return func
+    https://ankitbko.github.io/blog/2021/04/logging-in-python/
 
-    name = "purrio"
+    Args:
+        func: anything (except a generator, I think)
+
+    Returns:
+        the wrapped function
+    """
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-
         args_repr = [repr(a) for a in args]
         kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
         signature = ", ".join(args_repr + kwargs_repr)
