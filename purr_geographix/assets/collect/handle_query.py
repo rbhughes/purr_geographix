@@ -1,4 +1,3 @@
-import asyncio
 import json
 import pyodbc
 import pandas as pd
@@ -15,6 +14,23 @@ from core.util import (
     timestamp_filename,
     CustomJSONEncoder,
 )
+from purr_geographix.core.logger import logger
+
+"""GeoGraphix asset query overview.
+
+    Asset queries are well-centric. A parent well object is returned with every
+    asset type. Actual asset data is returned in 'rollups' of child records.
+    Sometimes this makes perfect sense, but occasionally a one-to-one 
+    relationship is represented as a single-item array.
+    
+    Why? Ideally, we would specify* exact columns and create more accurate joins
+    for each asset. However, schemas changes have resulted in new tables and 
+    columns over the years, and that will likely continue. We take the pragmatic
+    approach and just join on UWI.
+    
+    * Previous iterations of this utility used fully specified queries; contact
+    me if you want more details.
+"""
 
 formatters = {
     "date": datetime_formatter(),
@@ -36,9 +52,21 @@ def build_where_clause(
 ):
     """Construct a WHERE clause based on a specific asset 'recipe'
 
+    Recipes are dict templates that define primary and rollup table
+    relationships. See select_recipes.py for specifics.
+
     Examples:
-        Recipes are dict templates that define primary and rollup table
-        relationships, See select_recipes.py for examples.
+        (a complex example from survey, newlines added for clarity)
+        WHERE uwi IN (
+            SELECT DISTINCT(uwi) FROM well_dir_srvy_station
+            UNION
+            SELECT DISTINCT(uwi) FROM well_dir_proposed_srvy_station
+            WHERE uwi SIMILAR TO '050570655%'
+        )
+        AND uwi SIMILAR TO '050570655%'
+
+        (a simple example)
+        WHERE uwi SIMILAR TO '050570655%'
 
     Args:
         index_col (str): The primary column name used for grouping, etc. This
@@ -76,15 +104,17 @@ def build_subquery_clause(
         uwi_query: str,
 ):
     """
+    Examples:
+        from survey (newlines added for clarity):
 
-    Args:
-        index_col:
-        subquery:
-        subconditions:
-        uwi_query:
+        "uwi IN (
+            SELECT DISTINCT(uwi) FROM well_dir_srvy_station
+            UNION
+            SELECT DISTINCT(uwi) FROM well_dir_proposed_srvy_station
+            WHERE uwi SIMILAR TO '050570655%'
+        )"
 
-    Returns:
-
+    See build_where_clause for details
     """
     subz = []
 
@@ -104,7 +134,7 @@ def build_subquery_clause(
 
 def read_sql_table_chunked(
         conn: Dict[str, any],
-        uwi_query: str,
+        uwi_query: str | None,
         portion: Dict[str, any],
         chunksize: int = 10000,
 ) -> Generator[pd.DataFrame, None, None]:
@@ -162,7 +192,7 @@ def read_sql_table_chunked(
                 f"{where_clause} ORDER BY {index_col} "
             )
 
-            print(query)
+            logger.debug(query)
 
             with pyodbc.connect(**conn) as cn:
                 cursor = cn.cursor()
@@ -193,8 +223,6 @@ def read_sql_table_chunked(
                     if dtype == "integer" and col in df.columns:
                         df[col] = df[col].astype("Int64")
 
-                # print(df.columns.str.lower())
-
             if df.empty:
                 break
             yield df
@@ -203,7 +231,16 @@ def read_sql_table_chunked(
     return read_chunk()
 
 
-def collect_and_assemble_docs(args):
+def collect_and_assemble_docs(args: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Execute SQL queries and combine results into JSON documents
+
+    Args:
+        args (Dict[str, Any]: Contains connection params, a UWI filter and a
+        specific 'recipe' for how to query and merge the results into JSON
+
+    Returns:
+        List[Dict[str, Any]]: A list of well-centric documents
+    """
     conn = args["conn"]
     uwi_query = args.get("uwi_query", None)
     recipe = args["recipe"]
@@ -263,17 +300,28 @@ def collect_and_assemble_docs(args):
                 record[table_name] = r_dict.get(idx, None)
             records.append(record)
 
-    print(f"returning {len(records)} records", str(datetime.now()))
+    logger.info(f"returning {len(records)} records")
     return records
 
 
 def export_json(records, repo_id, asset) -> str:
+    """Convert dicts to JSON and save the file.
+
+    Args:
+        records (List[Dict[str, Any]]): The list of dicts obtained by
+        collect_and_assemble_docs.
+        repo_id (str): Used in file name.
+        asset (str): Used in file name.
+
+    Returns:
+        str: A summary containing counts and file path
+
+    TODO: Investigate streaming?
+    """
     db = next(get_db())
     file_depot = get_file_depot(db)
-    print("file_depot", file_depot)
     db.close()
     depot_path = Path(file_depot)
-    print(depot_path)
 
     jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
     json_file = timestamp_filename(repo_id, asset)
@@ -281,10 +329,21 @@ def export_json(records, repo_id, asset) -> str:
 
     with open(out_file, "w") as file:
         file.write(jd)
+
     return f"Exported {len(records)} docs to: {out_file}"
 
 
 async def selector(repo_id: str, asset: str, uwi_query: str = None) -> str:
+    """Main entry point to collect data from a GeoGraphix project
+
+    Args:
+        repo_id (str): ID from a specific GeoGraphix project
+        asset (str): An asset (i.e. datatype) to query from a gxdb
+        uwi_query (str): A SIMILAR TO clause based on UWI string(s).
+
+    Returns:
+        str: A summary of the selector job--probably from export_json()
+    """
     db = next(get_db())
     repo = get_repo_by_id(db, repo_id)
     db.close()
@@ -306,4 +365,5 @@ async def selector(repo_id: str, asset: str, uwi_query: str = None) -> str:
         summary = await async_export_json(records, repo_id, asset)
         return summary
     else:
-        return "Query returned no results"
+        summary = "Query returned no results"
+        return summary

@@ -58,7 +58,6 @@ def generate_repo_id(fs_path: str) -> str:
         str: Short, unique id that is easier for humans to work with than UUID
     """
     fp = Path(fs_path)
-    print(str(fp))
     prefix = fp.name.upper()[:3]
     suffix = hashlib.md5(str(fp).lower().encode()).hexdigest()[:6]
     return f"{prefix}_{suffix}".upper()
