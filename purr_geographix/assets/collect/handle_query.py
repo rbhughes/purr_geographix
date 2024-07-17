@@ -4,6 +4,7 @@ import pyodbc
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Generator
 from purr_geographix.core.database import get_db
 from purr_geographix.core.crud import get_repo_by_id, get_file_depot
 from purr_geographix.assets.collect.select_recipes import recipes
@@ -27,12 +28,31 @@ formatters = {
 
 
 def build_where_clause(
-        index_col="uwi",
-        subquery=None,
-        subconditions=None,
-        conditions=None,
-        uwi_query=None,
+        index_col: str = "uwi",
+        subquery: str = None,
+        subconditions: List[str] = None,
+        conditions: List[str] = None,
+        uwi_query: str = None,
 ):
+    """Construct a WHERE clause based on a specific asset 'recipe'
+
+    Examples:
+        Recipes are dict templates that define primary and rollup table
+        relationships, See select_recipes.py for examples.
+
+    Args:
+        index_col (str): The primary column name used for grouping, etc. This
+            is usually 'uwi' or 'wellid'. Note that rollups/list aggregations
+            are based only on uwi, not compound keys. This keeps things simple
+            at the expense of possible duplication in child objects.
+        subquery (str): A subquery used to limit parent (i.e. WELL) records
+        subconditions (str): Additional limits (WHERE clause) for subquery.
+        conditions (str): Top-level WHERE clause (just not in a subquery)
+        uwi_query (str): A SIMILAR TO clause based on UWI string(s).
+
+    Returns:
+        str: Basically, a WHERE clause specific to this asset recipe.
+    """
     clauses = []
 
     if subquery:
@@ -49,7 +69,23 @@ def build_where_clause(
     return f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
 
-def build_subquery_clause(index_col, subquery, subconditions, uwi_query):
+def build_subquery_clause(
+        index_col: str,
+        subquery: str,
+        subconditions: List[str],
+        uwi_query: str,
+):
+    """
+
+    Args:
+        index_col:
+        subquery:
+        subconditions:
+        uwi_query:
+
+    Returns:
+
+    """
     subz = []
 
     if subconditions:
@@ -67,11 +103,26 @@ def build_subquery_clause(index_col, subquery, subconditions, uwi_query):
 
 
 def read_sql_table_chunked(
-        conn,
-        uwi_query,
-        portion,
-        chunksize=10000,
-):
+        conn: Dict[str, any],
+        uwi_query: str,
+        portion: Dict[str, any],
+        chunksize: int = 10000,
+) -> Generator[pd.DataFrame, None, None]:
+    """A generator to read chunks of data into DataFrames
+
+    We use column datatypes as returned by pyodbc to apply some formatting and
+    type checking, which prevents some None/NULL/<blank> issues in dataframes.
+
+    Args:
+        conn (dict): Connection parameters from repo.
+        uwi_query (str): A SIMILAR TO clause based on UWI string(s).
+        portion (dict): A dict defining parent/child relationships for queries
+        chunksize (int): Maximum chunk for generator to yield
+
+    Returns:
+        Generator: a populated pd.DataFrame
+
+    """
     table_name = portion["table_name"]
     index_col = portion["index_col"]
     subquery = portion.get("subquery", None)
@@ -83,7 +134,12 @@ def read_sql_table_chunked(
         index_col, subquery, subconditions, conditions, uwi_query
     )
 
-    def get_column_mappings():
+    def get_column_mappings() -> Dict[str, str]:
+        """Get column names and (odbc-centric) datatypes from pyodbc
+
+        Returns:
+            Dict[str, str]: lower_case column names and datatypes
+        """
         with pyodbc.connect(**conn) as cn:
             cursor = cn.cursor()
 
@@ -97,7 +153,6 @@ def read_sql_table_chunked(
     columns = list(col_mappings.keys())
 
     def read_chunk():
-
         start_at = 0
         while True:
 
@@ -168,30 +223,6 @@ def collect_and_assemble_docs(args):
             recipe["primary"]["index_col"], drop=False, inplace=True
         )
 
-        singles_dict = {}
-        if "singles" in recipe:
-            for single in recipe["singles"]:
-                orig_index_col = single["index_col"]
-                single_chunks = read_sql_table_chunked(
-                    conn,
-                    uwi_query,
-                    portion=single,
-                )
-                single_chunk = next(single_chunks, pd.DataFrame())
-                if not single_chunk.empty:
-                    if single["index_col"] != "uwi":
-                        single_chunk["uwi"] = single_chunk[single["index_col"]]
-                        single["index_col"] = "uwi"
-                    single_chunk.set_index(
-                        single["index_col"], drop=False, inplace=True
-                    )
-                    single_chunk = single_chunk.rename(columns={"uwi": "uwi_link"})
-                    singles_dict[single["table_name"]] = single_chunk.to_dict(
-                        orient="index"
-                    )
-                # when index_col != "uwi" and chunksize is lower than count
-                single["index_col"] = orig_index_col
-
         rollups_dict = {}
         if "rollups" in recipe:
             for rollup in recipe["rollups"]:
@@ -228,8 +259,6 @@ def collect_and_assemble_docs(args):
                 [args["repo_id"], args["asset"], record["well"]["uwi"]]
             )
 
-            for table_name, s_dict in singles_dict.items():
-                record[table_name] = s_dict.get(idx, None)
             for table_name, r_dict in rollups_dict.items():
                 record[table_name] = r_dict.get(idx, None)
             records.append(record)

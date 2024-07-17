@@ -33,7 +33,11 @@ def db_exec(conn: dict, sql: str) -> List[Dict[str, Any]] | Exception:
 
     try:
         with pyodbc.connect(**conn) as connection:
-            # connection.setencoding("CP1252")
+
+            # I suspect LMKR does not modify this per locale, but you should
+            # probably verify the gxdb encoding when dealing with non-US data.
+            connection.setencoding("CP1252")
+
             with connection.cursor() as cursor:
                 cursor.execute(sql)
 

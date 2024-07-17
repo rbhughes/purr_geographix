@@ -11,21 +11,28 @@ from purr_geographix.core.schemas import Repo
 
 
 async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
-    """
-    1. get repo_paths
-    2. create initial repo_base dict for each
-    3. define and run augment functions to add more stuff to each repo_base
-    4. validate and ensure that sqlite can digest dicts and datetime
-    5. reformat repo.repo_mod to string to permit json serialization
+    """Recursively crawl a network path for GeoGraphix project metadata.
+
+    1. repo_paths: identify potential repos by file structure
+    2. create initial repo_base dict for each potential repo
+    3. repo_list: check SQLAnywhere connectivity, reject (but log) failures
+    4. define and run 'augment' functions to add metadata to each repo_base
+    5. validate dict against pydantic Repo schema and save to sqlite
+    6. reformat repo.repo_mod to string to permit json serialization
 
     Args:
-        recon_root: A directory path (project home) containing GeoGraphix repos
-        ggx_host: Hostname of the GeoGraphix server. Defaults to "localhost" if
-        not specified.
+        recon_root (str): A directory containing GeoGraphix repos (projects).
+        ggx_host (str): Hostname or IP of the GeoGraphix project *server.
+
+    * You can technically use any PC with GeoGraphix installed, but performance
+    is best if you use the actual project server since it has probably been
+    optimized to host SQLAnywhere databases. Run pmcfg.exe or check the registry
+    key's -ch flag at:
+    HKLM/SYSTEM/CurrentControlSet/Services/SQLANYs_GGX/Parameters
+    A dedicated GeoGraphix server might be '50p' using 50% of available memory.
 
     Returns:
-        List of repo dicts somewhat sanitized for export as JSON
-
+        List[dict]: List of repo dicts containing metadata
     """
     repo_paths = await network_repo_scan(recon_root)
     repo_list = [create_repo_base(rp, ggx_host) for rp in repo_paths]
