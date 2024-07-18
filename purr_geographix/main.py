@@ -1,4 +1,5 @@
 import uvicorn
+import json
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from purr_geographix.core import routes_settings
@@ -20,6 +21,11 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(routes_settings.router, prefix="/purr/ggx")
 app.include_router(routes_assets.router, prefix="/purr/ggx")
+
+# to generate current schema
+openapi_schema = app.openapi()
+with open("./docs/openapi.json", "w") as f:
+    json.dump(openapi_schema, f, indent=2)
 
 if __name__ == "__main__":
     host = "0.0.0.0"
