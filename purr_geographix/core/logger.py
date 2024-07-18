@@ -1,32 +1,6 @@
 from loguru import logger
 import sys
 
-#
-# # CRITICAL
-# # ERROR
-# # WARNING
-# # INFO
-# # DEBUG
-#
-# LOG_LEVEL = "INFO"
-#
-#
-# def setup_logger():
-#     logging.basicConfig(
-#         level=LOG_LEVEL,
-#         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-#         handlers=[
-#             logging.StreamHandler(),  # logs to console
-#             logging.FileHandler("purr.log"),  # logs to file
-#         ],
-#     )
-#     return logging.getLogger(__name__)
-#
-#
-# logger = setup_logger()
-#
-# from loguru import logger
-
 # CRITICAL
 # ERROR
 # WARNING

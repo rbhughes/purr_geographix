@@ -1,17 +1,30 @@
 # purr_geographix
 
-<!--
-![geographix](./docs/geographix.png)
--->
+## About
 
 <div style="display: flex; align-items: center;">
     <img src="./docs/purrio.png" alt="drawing" width="100" style="margin-right: 20px;"/>
     <img src="./docs/geographix.png" alt="drawing" width="300"/>
 </div>
 
-## Purpose
+A mature GeoGraphix environment may contain dozens of projects* in various
+states of neglect. Some may exist on Windows shares not managed by a project server,
+thus making them invisible to the Discovery interface.
 
-GeoGraphix
+* Each [GeoGraphix](https://www.gverse.com/) "project" is a semi-structured collection
+  of E&P assets that interoperate with
+  a [SQLAnywhere](https://www.sap.com/products/technology-platform/sql-anywhere.html)
+  database. A typical mid-continent US project may contain a half million well records,
+  hundreds of [ESRI](https://www.esri.com/en-us/home)-powered maps and thousands of
+  files.
+
+Dynamic discovery of projects (even "misplaced" projects)
+
+A simple Python API
+
+No annoying licenses
+
+Well-centric exports to JSON
 
 ## Installation
 
