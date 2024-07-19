@@ -71,7 +71,7 @@ def check_gxdb(repo_base) -> bool:
     """
     res = db_exec(repo_base["conn"], "select db_name()")
     if isinstance(res, Exception):
-        logger.warn(f"Looks like a ggx project but invalid gxdb?: {res}")
+        logger.warning(f"Looks like a ggx project but invalid gxdb?: {res}")
         return False
     elif isinstance(res, list):
         return True

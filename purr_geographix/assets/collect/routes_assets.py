@@ -141,7 +141,7 @@ async def asset_collection(
         asset=asset,
         uwi_query=uwi_query,
         task_status=schemas.TaskStatus.PENDING,
-        task_message=f"export file: {export_file}"
+        task_message=f"export file (pending): {export_file}"
     )
     task_storage[task_id] = new_collect
 
