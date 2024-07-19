@@ -271,6 +271,13 @@ WELL = {
         "index_col": "uwi",
         "excluded_cols": ["gx_dev_well_blob"],
     },
+    "singles": [
+        {
+            "table_name": "legal_congress_loc",
+            "index_col": "uwi",
+        }
+    ]
+
 }
 
 ZONE = {

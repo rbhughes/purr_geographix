@@ -1,7 +1,6 @@
 import json
 import pyodbc
 import pandas as pd
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Generator
 from purr_geographix.core.database import get_db
@@ -11,7 +10,6 @@ from purr_geographix.core.util import (
     async_wrap,
     datetime_formatter,
     safe_numeric,
-    timestamp_filename,
     CustomJSONEncoder,
 )
 from purr_geographix.core.logger import logger
@@ -260,6 +258,30 @@ def collect_and_assemble_docs(args: Dict[str, Any]) -> List[Dict[str, Any]]:
             recipe["primary"]["index_col"], drop=False, inplace=True
         )
 
+        singles_dict = {}
+        if "singles" in recipe:
+            for single in recipe["singles"]:
+                orig_index_col = single["index_col"]
+                single_chunks = read_sql_table_chunked(
+                    conn,
+                    uwi_query,
+                    portion=single
+                )
+                single_chunk = next(single_chunks, pd.DataFrame())
+                if not single_chunk.empty:
+                    if single["index_col"] != "uwi":
+                        single_chunk["uwi"] = single_chunk[single["index_col"]]
+                        single["index_col"] = "uwi"
+                    single_chunk.set_index(
+                        single["index_col"], drop=False, inplace=True
+                    )
+                    single_chunk = single_chunk.rename(columns={"uwi": "uwi_link"})
+                    singles_dict[single["table_name"]] = single_chunk.to_dict(
+                        orient="index"
+                    )
+                # essential for when index_col != "uwi" and chunksize is lower than count
+                single["index_col"] = orig_index_col
+
         rollups_dict = {}
         if "rollups" in recipe:
             for rollup in recipe["rollups"]:
@@ -296,6 +318,9 @@ def collect_and_assemble_docs(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 [args["repo_id"], args["asset"], record["well"]["uwi"]]
             )
 
+            for table_name, s_dict in singles_dict.items():
+                record[table_name] = s_dict.get(idx, None)
+
             for table_name, r_dict in rollups_dict.items():
                 record[table_name] = r_dict.get(idx, None)
             records.append(record)
@@ -304,14 +329,13 @@ def collect_and_assemble_docs(args: Dict[str, Any]) -> List[Dict[str, Any]]:
     return records
 
 
-def export_json(records, repo_id, asset) -> str:
+def export_json(records, export_file) -> str:
     """Convert dicts to JSON and save the file.
 
     Args:
         records (List[Dict[str, Any]]): The list of dicts obtained by
         collect_and_assemble_docs.
-        repo_id (str): Used in file name.
-        asset (str): Used in file name.
+        export_file (str): The timestamp export file name defined earlier
 
     Returns:
         str: A summary containing counts and file path
@@ -324,8 +348,7 @@ def export_json(records, repo_id, asset) -> str:
     depot_path = Path(file_depot)
 
     jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
-    json_file = timestamp_filename(repo_id, asset)
-    out_file = Path(depot_path / json_file)
+    out_file = Path(depot_path / export_file)
 
     with open(out_file, "w") as file:
         file.write(jd)
@@ -333,7 +356,12 @@ def export_json(records, repo_id, asset) -> str:
     return f"Exported {len(records)} docs to: {out_file}"
 
 
-async def selector(repo_id: str, asset: str, uwi_query: str = None) -> str:
+async def selector(
+        repo_id: str,
+        asset: str,
+        export_file: str,
+        uwi_query: str = None
+) -> str:
     """Main entry point to collect data from a GeoGraphix project
 
     Args:
@@ -362,7 +390,7 @@ async def selector(repo_id: str, asset: str, uwi_query: str = None) -> str:
 
     if len(records) > 0:
         async_export_json = async_wrap(export_json)
-        summary = await async_export_json(records, repo_id, asset)
+        summary = await async_export_json(records, export_file)
         return summary
     else:
         summary = "Query returned no results"

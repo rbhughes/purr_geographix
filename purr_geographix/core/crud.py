@@ -14,8 +14,8 @@ def get_settings(db: Session) -> Dict[str, Union[models.Settings, List[models.Re
 
 
 def get_file_depot(db: Session) -> Optional[str]:
-    result = db.query(models.Settings.file_depot).first()
-    return result[0] if result else None
+    setting = db.query(models.Settings.file_depot).first()
+    return setting.file_depot
 
 
 def init_file_depot(db: Session) -> None:
@@ -37,8 +37,8 @@ def update_file_depot(db: Session, file_depot: str) -> Optional[str]:
         stmt = update(models.Settings).values(file_depot=file_depot)
     db.execute(stmt)
     db.commit()
-    result = db.query(models.Settings.file_depot).first()
-    return result[0] if result else None
+    setting = db.query(models.Settings.file_depot).first()
+    return setting.file_depot
 
 
 def upsert_repos(db: Session, repos: List[models.Repo]) -> List[models.Repo]:

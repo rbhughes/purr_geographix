@@ -28,10 +28,8 @@ app.include_router(routes_assets.router, prefix="/purr/ggx")
 #     json.dump(openapi_schema, f, indent=2)
 
 if __name__ == "__main__":
-    host = "0.0.0.0"
-    port = 8000
-    logger.info(f"Initializing purr_geographix API. host={host} port={port}")
-    uvicorn.run(app, host=host, port=port)
+    logger.info(f"Initializing purr_geographix API")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # to run in console, comment out the uvicorn import and __name__ lines
 # fastapi dev main.py   or   fastapi run main.py

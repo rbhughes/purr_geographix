@@ -1,3 +1,26 @@
+2024-07-19 | poetry stuff
+https://www.digitalocean.com/community/tutorials/how-to-publish-python-packages-to-pypi-using-poetry-on-ubuntu-22-04
+
+$ poetry config pypi-token.pypi your-api-token
+$ poetry build
+$ poetry publish
+
+poetry show
+poetry shell
+poetry env remove python
+poetry install
+poetry lock
+poetry add uvicorn
+
+(could not get it to work with uvicorn, but this (pyproject.toml) should work:
+[tool.poetry.scripts]
+start = "uvicorn purr_geographix.main:app --reload"
+start-prod = "uvicorn purr_geographix.main:app --workers 4"
+Then: poetry run start-prod
+
+Used this instead:
+poetry run uvicorn purr_geographix.main:app --reload
+
 
 2024-07-18 | snippet for timing network scan
 # async def main():

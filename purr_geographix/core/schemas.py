@@ -97,3 +97,4 @@ class RepoReconResponse(BaseModel):
 class AssetCollectionResponse(BaseModel):
     id: str
     task_status: TaskStatus
+    task_message: str

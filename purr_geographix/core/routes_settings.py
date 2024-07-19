@@ -40,7 +40,7 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
 )
 def get_file_depot(db: Session = Depends(get_db)):
     file_depot = crud.get_file_depot(db)
-    return file_depot
+    return {"file_depot": file_depot}
 
 
 @router.post(
@@ -61,8 +61,8 @@ def update_file_depot(file_depot: str, db: Session = Depends(get_db)):
             detail=f"Invalid directory: {file_depot}",
         )
     try:
-        db_settings = crud.update_file_depot(db=db, file_depot=valid_dir)
-        return db_settings
+        file_depot = crud.update_file_depot(db=db, file_depot=valid_dir)
+        return {"file_depot": file_depot}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
