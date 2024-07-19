@@ -1,6 +1,6 @@
 import numpy as np
 import alphashape
-from core.sqlanywhere import db_exec
+from purr_geographix.core.sqlanywhere import db_exec
 from purr_geographix.core.logger import logger
 
 # from purr_geographix.core.util import debugger
