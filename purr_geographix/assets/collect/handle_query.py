@@ -44,11 +44,11 @@ formatters = {
 
 
 def build_where_clause(
-        index_col: str = "uwi",
-        subquery: str = None,
-        subconditions: List[str] = None,
-        conditions: List[str] = None,
-        uwi_query: str = None,
+    index_col: str = "uwi",
+    subquery: str = None,
+    subconditions: List[str] = None,
+    conditions: List[str] = None,
+    uwi_query: str = None,
 ):
     """Construct a WHERE clause based on a specific asset 'recipe'
 
@@ -98,10 +98,10 @@ def build_where_clause(
 
 
 def build_subquery_clause(
-        index_col: str,
-        subquery: str,
-        subconditions: List[str],
-        uwi_query: str,
+    index_col: str,
+    subquery: str,
+    subconditions: List[str],
+    uwi_query: str,
 ):
     """
     Examples:
@@ -133,10 +133,10 @@ def build_subquery_clause(
 
 
 def read_sql_table_chunked(
-        conn: Dict[str, any],
-        uwi_query: str | None,
-        portion: Dict[str, any],
-        chunksize: int = 10000,
+    conn: Dict[str, any],
+    uwi_query: str | None,
+    portion: Dict[str, any],
+    chunksize: int = 10000,
 ) -> Generator[pd.DataFrame, None, None]:
     """A generator to read chunks of data into DataFrames
 

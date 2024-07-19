@@ -93,7 +93,7 @@ task_storage: Dict[str, schemas.AssetCollectionResponse] = {}
 
 
 async def process_asset_collection(
-        task_id: str, repo_id: str, asset: str, uwi_query: str
+    task_id: str, repo_id: str, asset: str, uwi_query: str
 ):
     try:
         task_storage[task_id].task_status = schemas.TaskStatus.IN_PROGRESS
@@ -112,21 +112,21 @@ async def process_asset_collection(
     response_model=schemas.AssetCollectionResponse,
     summary="Query a Repo for Asset data",
     description=(
-            "Specify a repo_id, asset (data type) and an optional uwi filter. "
-            "Query results will be written to files stored in the 'file_depot' "
-            "directory."
+        "Specify a repo_id, asset (data type) and an optional uwi filter. "
+        "Query results will be written to files stored in the 'file_depot' "
+        "directory."
     ),
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def asset_collection(
-        repo_id: str = Path(..., description="repo_id"),
-        asset: AssetTypeEnum = Path(..., description="asset type"),
-        uwi_query: str = Query(
-            None,
-            min_length=3,
-            description="Enter full or partial uwi(s); use * or % as wildcard."
-                        "Separate UWIs with spaces or commas. Leave blank to select all.",
-        ),
+    repo_id: str = Path(..., description="repo_id"),
+    asset: AssetTypeEnum = Path(..., description="asset type"),
+    uwi_query: str = Query(
+        None,
+        min_length=3,
+        description="Enter full or partial uwi(s); use * or % as wildcard."
+        "Separate UWIs with spaces or commas. Leave blank to select all.",
+    ),
 ):
     RepoId.validate_repo_id(repo_id)
     asset = asset.value
@@ -160,16 +160,17 @@ async def asset_collection(
     response_model=schemas.AssetCollectionResponse,
     summary="Check status of a /asset/{repo_id}/{asset} job using the task_id.",
     description=(
-            "An assect collection job may take several minutes, so use the task_id "
-            "returned by the original POST to (periodically) check the job status. "
-            "Status values are: pending, in_progress, completed or failed. Query "
-            "results will be written to the file_depot directory."
+        "An assect collection job may take several minutes, so use the task_id "
+        "returned by the original POST to (periodically) check the job status. "
+        "Status values are: pending, in_progress, completed or failed. Query "
+        "results will be written to the file_depot directory."
     ),
 )
 async def get_asset_collect_status(task_id: str):
     if task_id not in task_storage:
         raise HTTPException(status_code=404, detail="Asset collection task not found")
     return task_storage[task_id]
+
 
 # @router.post(
 #     "/collect_data/{repo_id}/{asset}",

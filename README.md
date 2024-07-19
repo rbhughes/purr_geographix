@@ -1,8 +1,6 @@
 # purr_geographix
 
-## About
-
-<div style="display: flex; align-items: center;">
+<div style="display: flex; align-items: center; height: 100px">
     <img src="./docs/purrio.png" alt="drawing" width="100" style="margin-right: 20px;"/>
     <img src="./docs/geographix.png" alt="drawing" width="300"/>
 </div>
@@ -11,20 +9,39 @@ A mature GeoGraphix environment may contain dozens of projects* in various
 states of neglect. Some may exist on Windows shares not managed by a project server,
 thus making them invisible to the Discovery interface.
 
+Use purr_geographix to easily locate and query any GeoGraphix project via a simple
+Python API. It's the missing middleware for taming an unruly geoscience data environment.
+
+---
+
+* ### Dynamic discovery of projects (even "misplaced" projects)
+* ### Simple Python API
+* ### No license checkouts
+* ### Well-centric exports to JSON:
+
+```
+- completion
+- core
+- dst
+- formation
+- ip
+- perforation
+- production
+- raster_log
+- survey
+- vector_log
+- well
+- zone
+```
+
+---
+
 * Each [GeoGraphix](https://www.gverse.com/) "project" is a semi-structured collection
   of E&P assets that interoperate with
   a [SQLAnywhere](https://www.sap.com/products/technology-platform/sql-anywhere.html)
   database. A typical mid-continent US project may contain a half million well records,
   hundreds of [ESRI](https://www.esri.com/en-us/home)-powered maps and thousands of
   files.
-
-Dynamic discovery of projects (even "misplaced" projects)
-
-A simple Python API
-
-No annoying licenses
-
-Well-centric exports to JSON
 
 ## Installation
 
@@ -38,9 +55,17 @@ purr_geographix is based on [FastAPI](https://fastapi.tiangolo.com "FastAPI").
 Once installed, you can use the auto-generated Swagger API pages to test drive
 the available routes.
 
-Here's a sample of current [API Routes](https://rbhughes.github.io/purr_geographix/)
+Current (demo)
+documentation:  [purr_geographix API Routes](https://rbhughes.github.io/purr_geographix/)
 
 ## Future
+
+Let me know whatever you might want to see in a future release. Some ideas are:
+
+* Structured ASCII (Petra PPF or GeoGraphix ASCII3) exports instead of JSON
+* Full Text Search
+* Auto-sync with your PPDM or OSDU store?
+* Standardize a multi-project interface with Spotfire
 
 ## License
 
