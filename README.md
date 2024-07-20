@@ -1,6 +1,6 @@
 # purr_geographix
 
-<div style="display: flex; align-items: center; height: 100px">
+<div style="display: flex; align-items: flex-end; height: 100px">
     <img src="./docs/purrio.png" alt="drawing" width="100" style="margin-right: 20px;"/>
     <img src="./docs/geographix.png" alt="drawing" width="300"/>
 </div>
@@ -9,7 +9,7 @@ Use **purr_geographix** to locate and query any GeoGraphix project* with zero se
 simple Python API. It's the missing middleware for taming an unruly geoscience data
 environment.
 
-Auto-generated (Swagger):
+Check out the (Swagger)
 [API](https://rbhughes.github.io/purr_geographix/)
 
 ---
@@ -53,7 +53,7 @@ Auto-generated (Swagger):
 `uvicorn purr_geographix.main:app --workers 4`
 
 **purr_geographix** uses [FastAPI](https://fastapi.tiangolo.com "FastAPI").
-You can see the local Swagger API at: `http://localhost:8000/docs`
+You can test-drive your local API at: `http://localhost:8000/docs`
 
 ## Usage
 
