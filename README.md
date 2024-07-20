@@ -40,23 +40,19 @@ geoscience data environment.
 
 ## Quickstart
 
----
-
-#### installation:
-
-PREREQUISITE: You'll need a SQLAnywhere database server instance. The best
+**PREREQUISITE**: You'll need a SQLAnywhere database server instance. The best
 approach is to install **purr_geographix** on a PC that already has GeoGraphix.
 Technically, you could use just the SQLAnywhere client
 from [SAP](https://help.sap.com/docs/SAP_SQL_Anywhere), but you'll still need a valid
 database _server_ someplace. Contact me if you need help.
 
-#### install
+### install
 
 `pip install purr_geographix`
 or
 `poetry add purr_geographix`
 
-#### launch:
+### launch:
 
 `uvicorn purr_geographix.main:app --workers 4`
 
