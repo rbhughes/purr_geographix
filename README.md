@@ -1,8 +1,8 @@
 # purr_geographix
 
-<div style="display: flex; align-items: flex-end; height: 100px">
-    <img src="./docs/purrio.png" alt="drawing" width="100" style="margin-right: 20px;"/>
-    <img src="./docs/geographix.png" alt="drawing" width="300"/>
+<div style="display: flex; height: 85px">
+    <img src="./docs/purrio.png" alt="drawing" style="margin-right: 20px;"/>
+    <img src="./docs/geographix.png" alt="drawing"/>
 </div>
 
 Use **purr_geographix** to locate and query any GeoGraphix project* with zero setup via a
