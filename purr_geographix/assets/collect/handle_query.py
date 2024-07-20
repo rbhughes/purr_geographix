@@ -367,6 +367,7 @@ async def selector(
     Args:
         repo_id (str): ID from a specific GeoGraphix project
         asset (str): An asset (i.e. datatype) to query from a gxdb
+        export_file (str): Export file name with timestamp
         uwi_query (str): A SIMILAR TO clause based on UWI string(s).
 
     Returns:

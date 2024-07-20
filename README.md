@@ -53,10 +53,46 @@ Python API. It's the missing middleware for taming an unruly geoscience data env
 
 purr_geographix is based on [FastAPI](https://fastapi.tiangolo.com "FastAPI").
 Once installed, you can use the auto-generated Swagger API pages to test drive
-the available routes.
+the available routes. The current (demo) documentation:
+[purr_geographix routes](https://rbhughes.github.io/purr_geographix/)
 
-Current (demo)
-documentation:  [purr_geographix API Routes](https://rbhughes.github.io/purr_geographix/)
+
+
+---
+
+#### A note about using `curl` on Windows
+
+The API docs show curl examples using Linux syntax with a lot of "\" to represent line
+continuations. Powershell and WSL might be able to handle them as-is. Replace single
+quotes with double-quotes if using cmd.exe.
+
+```
+curl -X 'GET' \
+  'http://localhost:8000/purr/ggx/repos/' \
+  -H 'accept: application/json'
+```
+
+...will probably work if you adjust to...
+
+`curl -X "GET" "http://localhost:8000/purr/ggx/repos/" -H "accept: application/json"`
+
+...or even...
+
+`curl -X GET http://localhost:8000/purr/ggx/repos/ -H accept: application/json`
+
+Another example using POST
+
+curl -X 'POST' \
+'http://localhost:8000/purr/ggx/repos/recon?recon_root=%5C%5Cscarab%5Cggx_projects&ggx_host=scarab' \
+-H 'accept: application/json' \
+-d ''
+
+curl -X 'POST' \
+'http://localhost:8000/purr/ggx/asset/COL_7159C5/well?uwi_query=05045150%2A' \
+-H 'accept: application/json' \
+-d ''
+
+http://localhost:8000/purr/ggx/asset/COL_7159C5/well?uwi_query=05045150%2A
 
 ## Future
 
