@@ -5,16 +5,14 @@
     <img src="./docs/geographix.png" alt="drawing"/>
 </div>
 
-Use **purr_geographix** to locate and query any GeoGraphix project* with zero setup via a
-simple Python API. It's the missing middleware for taming an unruly geoscience data
-environment.
-
-Check out the (Swagger)
-[API](https://rbhughes.github.io/purr_geographix/)
-
 ---
 
-* #### Dynamic discovery of projects (even lost, unshared projects)
+Use **purr_geographix** to locate and query any GeoGraphix project* with zero setup via a
+simple Python API. It's the missing
+middleware [API](https://rbhughes.github.io/purr_geographix/) for taming an unruly
+geoscience data environment.
+
+* #### Dynamic discovery and query of projects (even lost, unshared)
 * #### Simple Python API
 * #### No license checkouts
 * #### Well-centric exports to JSON:
@@ -46,24 +44,34 @@ Check out the (Swagger)
 
 #### installation:
 
+PREREQUISITE: You'll need a SQLAnywhere database server instance. The best
+approach is to install **purr_geographix** on a PC that already has GeoGraphix.
+Technically, you could use just the SQLAnywhere client
+from [SAP](https://help.sap.com/docs/SAP_SQL_Anywhere), but you'll still need a valid
+database _server_ someplace. Contact me if you need help.
+
+#### install
+
 `pip install purr_geographix`
+or
+`poetry add purr_geographix`
 
 #### launch:
 
 `uvicorn purr_geographix.main:app --workers 4`
 
 **purr_geographix** uses [FastAPI](https://fastapi.tiangolo.com "FastAPI").
-You can test-drive your local API at: `http://localhost:8000/docs`
+You can test-drive your local API at: `http://localhost:8000/docs` after install.
 
 ## Usage
 
 ---
 
-#### 1. Do a POST `/purr/ggx/repos/recon` with a network path containing GeoGraphix
+#### 1. Do a POST `/purr/ggx/repos/recon` with a network path and server hostname
 
-projects (or just a path to a single project) and a GeoGraphix server hostname.
-
-_We use the term **repo** and **project** interchangeably_
+The path can be a top-level container of GeoGraphix projects (i.e. a Project Home)
+or just a project itself. Include the server hostname.
+NOTE: _We use the term **repo** and **project** interchangeably_
 
 ![recon](./docs/recon.png)
 
