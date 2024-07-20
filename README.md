@@ -65,8 +65,6 @@ You can test-drive your local API at: `http://localhost:8000/docs` after install
 
 ## Usage
 
----
-
 #### 1. Do a POST `/purr/ggx/repos/recon` with a network path and server hostname
 
 The path can be a top-level container of GeoGraphix projects (i.e. a Project Home)
@@ -129,9 +127,10 @@ pending export file.
 }
 ```
 
-#### 4. Doing a GET to /purr/ggx/asset/{repo_id}/{asset} returns tast_status and a
+#### 4. Check asset export with a GET to /purr/ggx/asset/{repo_id}/{asset}
 
-task_message containing exported file info.
+Like `repo/recon`, this returns a tast_status and task_message containing exported file
+info.
 
 ```
 {
@@ -143,8 +142,6 @@ task_message containing exported file info.
 
 All asset data is exported as a "flattened" JSON representation of the original
 relational model. Here's a [survey](./docs/survey.json) example.
-
----
 
 ## Future
 
