@@ -5,19 +5,19 @@
     <img src="./docs/geographix.png" alt="drawing" width="300"/>
 </div>
 
-A mature GeoGraphix environment may contain dozens of projects* in various
-states of neglect. Some may exist on Windows shares not managed by a project server,
-thus making them invisible to the Discovery interface.
+Use **purr_geographix** to locate and query any GeoGraphix project* with zero setup via a
+simple Python API. It's the missing middleware for taming an unruly geoscience data
+environment.
 
-Use purr_geographix to easily locate and query any GeoGraphix project via a simple
-Python API. It's the missing middleware for taming an unruly geoscience data environment.
+Auto-generated (Swagger):
+[API](https://rbhughes.github.io/purr_geographix/)
 
 ---
 
-* ### Dynamic discovery of projects (even "misplaced" projects)
-* ### Simple Python API
-* ### No license checkouts
-* ### Well-centric exports to JSON:
+* #### Dynamic discovery of projects (even lost, unshared projects)
+* #### Simple Python API
+* #### No license checkouts
+* #### Well-centric exports to JSON:
 
 ```
 - completion
@@ -34,72 +34,118 @@ Python API. It's the missing middleware for taming an unruly geoscience data env
 - zone
 ```
 
+* _Each [GeoGraphix](https://www.gverse.com/) "project" is a semi-structured collection
+  of E&P assets that interoperate with its own
+  [SQLAnywhere](https://www.sap.com/products/technology-platform/sql-anywhere.html)
+  database. From an IT perspective, GeoGraphix is a distributed collection of
+  user-managed databases "on the network" containing millions of assets._
+
+## Quickstart
+
 ---
 
-* Each [GeoGraphix](https://www.gverse.com/) "project" is a semi-structured collection
-  of E&P assets that interoperate with
-  a [SQLAnywhere](https://www.sap.com/products/technology-platform/sql-anywhere.html)
-  database. A typical mid-continent US project may contain a half million well records,
-  hundreds of [ESRI](https://www.esri.com/en-us/home)-powered maps and thousands of
-  files.
-
-## Installation
+#### installation:
 
 `pip install purr_geographix`
 
+#### launch:
+
+`uvicorn purr_geographix.main:app --workers 4`
+
+**purr_geographix** uses [FastAPI](https://fastapi.tiangolo.com "FastAPI").
+You can see the local Swagger API at: `http://localhost:8000/docs`
+
 ## Usage
-
-<img src="./docs/fastapi.png" alt="drawing" width="100"/>
-
-purr_geographix is based on [FastAPI](https://fastapi.tiangolo.com "FastAPI").
-Once installed, you can use the auto-generated Swagger API pages to test drive
-the available routes. The current (demo) documentation:
-[purr_geographix routes](https://rbhughes.github.io/purr_geographix/)
-
-
 
 ---
 
-#### A note about using `curl` on Windows
+#### 1. Do a POST `/purr/ggx/repos/recon` with a network path containing GeoGraphix
 
-The API docs show curl examples using Linux syntax with a lot of "\" to represent line
-continuations. Powershell and WSL might be able to handle them as-is. Replace single
-quotes with double-quotes if using cmd.exe.
+projects (or just a path to a single project) and a GeoGraphix server hostname.
+
+_We use the term **repo** and **project** interchangeably_
+
+![recon](./docs/recon.png)
+
+or
 
 ```
-curl -X 'GET' \
-  'http://localhost:8000/purr/ggx/repos/' \
-  -H 'accept: application/json'
-```
-
-...will probably work if you adjust to...
-
-`curl -X "GET" "http://localhost:8000/purr/ggx/repos/" -H "accept: application/json"`
-
-...or even...
-
-`curl -X GET http://localhost:8000/purr/ggx/repos/ -H accept: application/json`
-
-Another example using POST
-
 curl -X 'POST' \
 'http://localhost:8000/purr/ggx/repos/recon?recon_root=%5C%5Cscarab%5Cggx_projects&ggx_host=scarab' \
 -H 'accept: application/json' \
 -d ''
+```
 
-curl -X 'POST' \
-'http://localhost:8000/purr/ggx/asset/COL_7159C5/well?uwi_query=05045150%2A' \
--H 'accept: application/json' \
--d ''
+_(Replace single quotes with double-quote for Windows)_
 
-http://localhost:8000/purr/ggx/asset/COL_7159C5/well?uwi_query=05045150%2A
+This might take a few minutes, so you get a `202 Reponse` containing a task id and
+task_status:
+
+```
+{
+  "id": "d0ce171c-3f0f-4b37-953b-fe9df2f14bd1",
+  "recon_root": "\\\\scarab\\ggx_projects\\",
+  "ggx_host": "scarab",
+  "task_status": "pending"
+}
+```
+
+Metadata for each [repo](./docs/colorado_north.json) is stored in a local (sqlite)
+database.
+
+#### 2. Use the task id to check status with a GET to `/purr/ggx/repos/recon/{task_id}`
+
+```
+{
+  "id": "d0ce171c-3f0f-4b37-953b-fe9df2f14bd1",
+  "recon_root": "\\\\scarab\\ggx_projects\\",
+  "ggx_host": "scarab",
+  "task_status": "completed"
+}
+```
+
+Possible status values are: `pending`, `in_progress`, `completed`, or `failed`.
+
+#### 3. Use the `repo_id` to query asset data in a repo. Add a UWI filter to search for specific well identifiers.
+
+![asset_0](./docs/asset_co_0.png)
+
+This can also be time-consuming, so it returns a `202 Response` with a task id and the
+pending export file.
+
+```
+{
+  "id": "f1de6c36-5693-4cbb-a4a1-9327af501ca1",
+  "task_status": "pending",
+  "task_message": "export file (pending): col_7159c5_1721489912_completion.json"
+}
+```
+
+#### 4. Doing a GET to /purr/ggx/asset/{repo_id}/{asset} returns tast_status and a
+
+task_message containing exported file info.
+
+```
+{
+"id": "f1de6c36-5693-4cbb-a4a1-9327af501ca1",
+"task_status": "completed",
+"task_message": "Exported 72 docs to: C:\\temp\\col_7159c5_1721489912_completion.json"
+}
+```
+
+All asset data is exported as a "flattened" JSON representation of the original
+relational model. Here's a [survey](./docs/survey.json) example.
+
+---
 
 ## Future
 
 Let me know whatever you might want to see in a future release. Some ideas are:
 
+* Better query logic: match terms with `AND` instead of `SIMILAR TO` (`OR`)
 * Structured ASCII (Petra PPF or GeoGraphix ASCII3) exports instead of JSON
 * Full Text Search
+* Datum-shift and standardize on EPSG:4326 for polygon hull points
 * Auto-sync with your PPDM or OSDU store?
 * Standardize a multi-project interface with Spotfire
 
