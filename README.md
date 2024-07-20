@@ -1,7 +1,7 @@
 # purr_geographix
 
 <div style="display: flex; height: 85px">
-    <img src="./docs/purrio.png" alt="drawing" style="margin-right: 20px;"/>
+    <img src="./docs/purrio.png" alt="drawing" height="85px" style="margin-right: 20px;"/>
     <img src="./docs/geographix.png" alt="drawing"/>
 </div>
 
