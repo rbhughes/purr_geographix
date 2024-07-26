@@ -1279,6 +1279,17 @@ shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
 
 [[package]]
+name = "types-retry"
+version = "0.9.9.4"
+description = "Typing stubs for retry"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-retry-0.9.9.4.tar.gz", hash = "sha256:e4731dc684b56b875d9746459ad665d3bc281a56b530acdf1c97730167799941"},
+    {file = "types_retry-0.9.9.4-py3-none-any.whl", hash = "sha256:f29760a9fe8b1fefe253e5fe6be7e4c0eba243932c600e0eccffb42a21d17765"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -1554,4 +1565,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "59fbe4d12eab57c1c3f6412430116bf60dc718714c9e07d671b3799dfe4d1f53"
+content-hash = "bc8e765865f3610bad860c45ca0bf22da3d82ba848ad0a5ef16784c863de12b8"

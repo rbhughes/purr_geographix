@@ -1,15 +1,17 @@
+"""Misc Utility methods"""
+
 import asyncio
 import functools
 import hashlib
 import json
-import pandas as pd
-import numpy as np
 import socket
 import time
 from datetime import datetime, date
 from functools import wraps, partial
 from pathlib import Path
-from typing import Callable, Optional, Union, Coroutine, Any
+from typing import Callable, Dict, List, Union, Optional, Coroutine, Any
+import pandas as pd
+import numpy as np
 from purr_geographix.core.logger import logger
 
 
@@ -35,6 +37,14 @@ def async_wrap(func: callable) -> Callable[..., Coroutine[Any, Any, Any]]:
 
 
 def is_valid_dir(fs_path: str) -> Optional[str]:
+    """Validates and returns path as string if it exists
+
+    Args:
+        fs_path (str): A string path that may exist
+
+    Returns:
+        Optional[str]: Return Path string if it exists or None if not
+    """
     path = Path(fs_path).resolve()
     if path.is_dir():
         return str(path)
@@ -49,7 +59,7 @@ def generate_repo_id(fs_path: str) -> str:
     This is intentional.
 
     Examples:
-        //scarab/ggx_projects\blank_us_nad27_mean ~~> "BLA_0F0588"
+        //scarab/ggx_projects/blank_us_nad27_mean ~~> "BLA_0F0588"
 
     Args:
         fs_path (str): Full path to a repo (project) directory.
@@ -64,6 +74,11 @@ def generate_repo_id(fs_path: str) -> str:
 
 
 def hostname():
+    """Get the hostname where this code is running
+
+    Returns:
+        str: PC hostname to lowercase
+    """
     return socket.gethostname().lower()
 
 
@@ -81,55 +96,81 @@ def hostname():
 
 class CustomJSONEncoder(json.JSONEncoder):
     """
-    A rather overwrought sanitizer for data coming from GeoGraphix projects.
-    We are generally dealing with Windows CP1252 encoding, but there have been
-    generations of exceptions allowed into the gxdb over the years.
+    A sanitizer for data coming from GeoGraphix projects.
+    Handles Windows CP1252 encoding and various data types.
     """
 
-    def default(self, obj):
-        if isinstance(obj, (str, int, bool, type(None))):
-            return obj
-        elif isinstance(obj, (pd.Timestamp, datetime, date)):
-            return obj.isoformat()
-        elif isinstance(obj, (np.integer, np.floating, float)):
-            if np.isnan(obj) or np.isinf(obj):
-                return None
-            return int(obj) if isinstance(obj, np.integer) else float(obj)
-        elif isinstance(obj, np.ndarray):
-            return [self.default(x) for x in obj.tolist()]
-        elif isinstance(obj, (np.bool_, bool)):
-            return bool(obj)
-        elif pd.api.types.is_scalar(obj):
-            return None if pd.isna(obj) else obj
-        elif isinstance(obj, dict):
-            return {k: self.default(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self.default(v) for v in obj]
-        elif isinstance(obj, pd.Series):
-            return self.default(obj.tolist())
-        elif isinstance(obj, pd.DataFrame):
-            return self.default(obj.to_dict(orient="records"))
-        else:
-            try:
-                return super().default(obj)
-            except TypeError:
-                return str(obj)
-
-    def encode(self, obj):
-        def nan_to_null(o):
-            if isinstance(o, float) and np.isnan(o):
-                return None
-            elif isinstance(o, dict):
-                return {k: nan_to_null(v) for k, v in o.items()}
-            elif isinstance(o, list):
-                return [nan_to_null(v) for v in o]
+    def default(
+        self, o: Any
+    ) -> Union[str, int, float, bool, None, List[Any], Dict[str, Any]]:
+        """Encode various data types to JSON-compatible formats."""
+        if isinstance(o, (str, int, bool, type(None))):
             return o
+        elif isinstance(o, (pd.Timestamp, datetime, date)):
+            return o.isoformat()
+        elif isinstance(o, (np.integer, np.floating, float)):
+            return self._handle_numeric(o)
+        elif isinstance(o, np.ndarray):
+            return [self.default(x) for x in o.tolist()]
+        elif isinstance(o, (np.bool_, bool)):
+            return bool(o)
+        elif pd.api.types.is_scalar(o):
+            return None if pd.isna(o) else o
+        elif isinstance(o, (dict, list)):
+            return self._handle_container(o)
+        elif isinstance(o, pd.Series):
+            return self.default(o.tolist())
+        elif isinstance(o, pd.DataFrame):
+            return self.default(o.to_dict(orient="records"))
+        else:
+            return self._handle_unknown(o)
 
-        return json.dumps(nan_to_null(self.default(obj)), indent=4)
+    def _handle_numeric(self, obj):
+        """Handle numeric types, including NaN and Inf."""
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+        return int(obj) if isinstance(obj, np.integer) else float(obj)
+
+    def _handle_container(self, obj):
+        """Handle dict and list containers."""
+        if isinstance(obj, dict):
+            return {k: self.default(v) for k, v in obj.items()}
+        return [self.default(v) for v in obj]
+
+    def _handle_unknown(self, obj):
+        """Handle unknown types."""
+        try:
+            return super().default(obj)
+        except TypeError:
+            return str(obj)
+
+    def encode(self, o: Any) -> str:
+        """Encode object to JSON string, converting NaN to null."""
+        return json.dumps(self._nan_to_null(self.default(o)), indent=4)
+
+    def _nan_to_null(self, obj):
+        """Convert NaN to None recursively."""
+        if isinstance(obj, float) and np.isnan(obj):
+            return None
+        elif isinstance(obj, dict):
+            return {k: self._nan_to_null(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._nan_to_null(v) for v in obj]
+        return obj
 
 
-def datetime_formatter(format_string="%Y-%m-%dT%H:%M:%S"):
-    def format_datetime(x):
+def datetime_formatter(
+    format_string="%Y-%m-%dT%H:%M:%S",
+) -> Callable[[Union[pd.Timestamp, datetime, date, str, None]], Optional[str]]:
+    """Formatter to generate dates like 2022-02-02T12:12:12
+
+    Args:
+        format_string (str, optional): Defaults to "%Y-%m-%dT%H:%M:%S".
+    """
+
+    def format_datetime(
+        x: Union[pd.Timestamp, datetime, date, str, None],
+    ) -> Optional[str]:
         if pd.isna(x) or x == "":
             return None
         if isinstance(x, (pd.Timestamp, datetime, date)):
@@ -140,6 +181,14 @@ def datetime_formatter(format_string="%Y-%m-%dT%H:%M:%S"):
 
 
 def safe_numeric(x):
+    """Standardize some numeric types
+
+    Args:
+        x (Any): Some alleged numeric
+
+    Returns:
+        Number or None: _description_
+    """
     # see usage in handle_query()
     if pd.isna(x) or x == "":
         return None

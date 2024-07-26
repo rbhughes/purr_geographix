@@ -1,3 +1,5 @@
+"""Stuff involving metadata about a Repo filesystem"""
+
 import asyncio
 import os
 import re
@@ -46,7 +48,7 @@ async def walk_dir_for_gxdb(path: str) -> List[str]:
     root_dir = Path(path)
     potential_repos = []
 
-    for root, dirs, files in os.walk(root_dir):
+    for root, _, files in os.walk(root_dir):
         if any(file.endswith("gxdb.db") for file in files):
             if looks_like_ggx_project(root):
                 potential_repos.append(root)

@@ -1,5 +1,8 @@
+"""Main entry for Repo Recon"""
+
 import asyncio
 from pathlib import Path
+from typing import Dict, List, Any
 from purr_geographix.core.crud import upsert_repos
 from purr_geographix.core.database import get_db
 from purr_geographix.core.sqlanywhere import make_conn_params
@@ -10,7 +13,9 @@ from purr_geographix.recon.repo_fs import network_repo_scan, dir_stats, repo_mod
 from purr_geographix.core.schemas import Repo
 
 
-async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
+async def repo_recon(
+    recon_root: str, ggx_host: str = "localhost"
+) -> List[Dict[str, Any]]:
     """Recursively crawl a network path for GeoGraphix project metadata.
 
     1. repo_paths: identify potential repos by file structure
@@ -49,7 +54,7 @@ async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
 
     repos = await asyncio.gather(*[update_repo(repo) for repo in repo_list])
 
-    valid_repo_dicts = [Repo(**r).dict() for r in repos]
+    valid_repo_dicts = [Repo(**r).model_dump() for r in repos]
 
     db = next(get_db())
     upsert_repos(db, valid_repo_dicts)
@@ -61,7 +66,7 @@ async def repo_recon(recon_root: str, ggx_host: str = "localhost"):
     return valid_repo_dicts
 
 
-def create_repo_base(rp: str, ggx_host: str):
+def create_repo_base(rp: str, ggx_host: str) -> Dict[str, Any]:
     """
     See repo_recon for details
     """

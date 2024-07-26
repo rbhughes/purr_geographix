@@ -1,5 +1,8 @@
+"""Stuff involving metadata within Repo databases"""
+
+from typing import Dict, List, Optional, Tuple
 import numpy as np
-import alphashape
+import alphashape  # mypy: ignore-missing-imports
 from purr_geographix.core.sqlanywhere import db_exec
 from purr_geographix.core.logger import logger
 
@@ -79,7 +82,7 @@ def check_gxdb(repo_base) -> bool:
         return False
 
 
-def well_counts(repo_base) -> dict:
+def well_counts(repo_base) -> Dict[str, Optional[int]]:
     """Run the SQL counts (above) for each asset data type.
 
     If SQLAnywhere returns an exception the count = None for that asset type
@@ -107,7 +110,7 @@ def well_counts(repo_base) -> dict:
         "wells_with_zone": WELLS_WITH_ZONE,
     }
 
-    counts = {}
+    counts: Dict[str, Optional[int]] = {}
 
     for key, sql in counter_sql.items():
         res = db_exec(repo_base["conn"], sql)
@@ -120,7 +123,7 @@ def well_counts(repo_base) -> dict:
     return counts
 
 
-def concave_hull(points, alpha=0.5):
+def concave_hull(points, alpha=0.5) -> Optional[List[Tuple[float, float]]]:
     """Computes a concave hull of a set of points using alpha shape.
 
     Args:
@@ -135,14 +138,14 @@ def concave_hull(points, alpha=0.5):
     alpha_shape = alphashape.alphashape(points_array, alpha)
 
     if alpha_shape.is_empty:
-        concave_hull_vertices = None
+        return None
     else:
-        concave_hull_vertices = [list(coord) for coord in alpha_shape.exterior.coords]
+        return [
+            (float(coord[0]), float(coord[1])) for coord in alpha_shape.exterior.coords
+        ]
 
-    return concave_hull_vertices
 
-
-def get_polygon(repo_base) -> dict:
+def get_polygon(repo_base) -> Dict[str, Optional[List[Tuple[float, float]]]]:
     """Get a list of lat/lon points defining approximate project boundaries.
 
     I had used concave_hull (https://concave-hull.readthedocs.io/en/latest/),

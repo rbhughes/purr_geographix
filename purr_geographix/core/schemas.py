@@ -1,3 +1,5 @@
+"""Pydantic Schemas"""
+
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
@@ -5,15 +7,23 @@ from pydantic import BaseModel
 
 
 class SettingsBase(BaseModel):
+    """Pydantic model (Base) for Settings"""
+
     file_depot: Optional[str] = None
 
 
 class Settings(SettingsBase):
+    """Pydantic model for Settings"""
+
     class Config:
+        """Pydantic voodoo"""
+
         from_attributes = True
 
 
 class FileDepot(BaseModel):
+    """Pydantic model for FileDepot"""
+
     file_depot: Optional[str] = None
 
 
@@ -29,6 +39,8 @@ class FileDepot(BaseModel):
 
 
 class RepoBase(BaseModel):
+    """Pydantic model (Base) for Repo"""
+
     active: bool
     name: str
     fs_path: str
@@ -59,23 +71,33 @@ class RepoBase(BaseModel):
 
 
 class Repo(RepoBase):
+    """Pydantic model for Repo"""
+
     id: str
 
     class Config:
+        """Pydantic voodoo"""
+
         from_attributes = True
 
 
 class RepoMinimal(BaseModel):
+    """Pydantic model for Minimal Repo"""
+
     id: str
     name: str
     fs_path: str
     well_count: int
 
     class Config:
+        """Pydantic voodoo"""
+
         from_attributes = True
 
 
 class TaskStatus(str, Enum):
+    """TaskStatus Enum"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -83,11 +105,15 @@ class TaskStatus(str, Enum):
 
 
 class RepoReconCreate(BaseModel):
+    """Pydantic model for RepoReconCreate"""
+
     recon_root: str
     ggx_host: Optional[str] = None
 
 
 class RepoReconResponse(BaseModel):
+    """Pydantic model for RepoReconResponse"""
+
     id: str
     recon_root: str
     ggx_host: str
@@ -95,6 +121,8 @@ class RepoReconResponse(BaseModel):
 
 
 class AssetCollectionResponse(BaseModel):
+    """Pydantic model for AssetCollectionResponse"""
+
     id: str
     task_status: TaskStatus
     task_message: str

@@ -1,10 +1,20 @@
-from sqlalchemy import Boolean, Column, Integer, String, JSON, TIMESTAMP
-from sqlalchemy.ext.declarative import declarative_base
+"""SQLAlchemy Model definition"""
 
-Base = declarative_base()
+from sqlalchemy import Boolean, Column, Integer, String, JSON, TIMESTAMP
+
+# from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
+
+# Base = declarative_base()
+
+
+class Base(DeclarativeBase):
+    """SQLAlchemy Base class"""
 
 
 class Repo(Base):
+    """Definition of SQLAlchemy Repo object"""
+
     __tablename__ = "repos"
 
     id = Column(String, primary_key=True, index=True, unique=True)
@@ -38,6 +48,8 @@ class Repo(Base):
 
 
 class Settings(Base):
+    """Defintion of SQLAlchemy Settings object"""
+
     __tablename__ = "settings"
 
     file_depot = Column(

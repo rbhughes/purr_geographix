@@ -1,10 +1,12 @@
+"""FastAPI Routing for Assets"""
+
 import asyncio
 import uuid
+from typing import Dict
 from enum import Enum
 from fastapi import APIRouter, HTTPException, status, Query, Path
-from typing import Dict
-from purr_geographix.assets.collect.handle_query import selector
 from pydantic import BaseModel
+from purr_geographix.assets.collect.handle_query import selector
 from purr_geographix.core.database import get_db
 from purr_geographix.core.crud import fetch_repo_ids
 from purr_geographix.core.util import timestamp_filename
@@ -25,10 +27,13 @@ from purr_geographix.core.logger import logger
 
 
 class RepoId(BaseModel):
+    """Define RepoId class here rather than schemas to avoid extra imports"""
+
     repo_id: str
 
     @classmethod
     def validate_repo_id(cls, repo_id):
+        """The Repo.id really should exist here"""
         db = next(get_db())
         valid_repo_ids = fetch_repo_ids(db)
         if repo_id not in valid_repo_ids:
@@ -37,18 +42,20 @@ class RepoId(BaseModel):
 
 
 class AssetTypeEnum(str, Enum):
-    completion = "completion"
-    core = "core"
-    dst = "dst"
-    formation = "formation"
-    ip = "ip"
-    perforation = "perforation"
-    production = "production"
-    raster_log = "raster_log"
-    survey = "survey"
-    vector_log = "vector_log"
-    well = "well"
-    zone = "zone"
+    """Enums for Asset types"""
+
+    COMPLETION = "completion"
+    CORE = "core"
+    DST = "dst"
+    FORMATION = "formation"
+    IP = "ip"
+    PERFORATION = "perforation"
+    PRODUCTION = "production"
+    RASTER_LOG = "raster_log"
+    SURVEY = "survey"
+    VECTOR_LOG = "vector_log"
+    WELL = "well"
+    ZONE = "zone"
 
 
 def parse_uwis(uwis: str | None) -> str | None:
@@ -79,7 +86,7 @@ def parse_uwis(uwis: str | None) -> str | None:
     except AttributeError:
         logger.error(f"'uwis' must be a string, not {type(uwis)}")
         return uwis
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"Unexpected error occurred: {str(e)}")
         return uwis
 
@@ -90,8 +97,9 @@ task_storage: Dict[str, schemas.AssetCollectionResponse] = {}
 
 
 async def process_asset_collection(
-        task_id: str, repo_id: str, asset: str, export_file: str, uwi_query: str
+    task_id: str, repo_id: str, asset: str, export_file: str, uwi_query: str
 ):
+    """Trigger selector and update task_storage"""
     try:
         task_storage[task_id].task_status = schemas.TaskStatus.IN_PROGRESS
         res = await selector(repo_id, asset, export_file, uwi_query)
@@ -99,7 +107,7 @@ async def process_asset_collection(
         task_storage[task_id].task_message = res
         task_storage[task_id].task_status = schemas.TaskStatus.COMPLETED
         return res
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         task_storage[task_id].task_status = schemas.TaskStatus.FAILED
         logger.error(f"Task failed for {task_id}: {str(e)}")
 
@@ -110,22 +118,23 @@ async def process_asset_collection(
     response_model=schemas.AssetCollectionResponse,
     summary="Query a Repo for Asset data",
     description=(
-            "Specify a repo_id, asset (data type) and an optional uwi filter. "
-            "Query results will be written to files stored in the 'file_depot' "
-            "directory."
+        "Specify a repo_id, asset (data type) and an optional uwi filter. "
+        "Query results will be written to files stored in the 'file_depot' "
+        "directory."
     ),
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def asset_collection(
-        repo_id: str = Path(..., description="repo_id"),
-        asset: AssetTypeEnum = Path(..., description="asset type"),
-        uwi_query: str = Query(
-            None,
-            min_length=3,
-            description="Enter full or partial uwi(s); use * or % as wildcard."
-                        "Separate UWIs with spaces or commas. Leave blank to select all.",
-        ),
+    repo_id: str = Path(..., description="repo_id"),
+    asset: AssetTypeEnum = Path(..., description="asset type"),
+    uwi_query: str = Query(
+        None,
+        min_length=3,
+        description="Enter full or partial uwi(s); use * or % as wildcard."
+        "Separate UWIs with spaces or commas. Leave blank to select all.",
+    ),
 ):
+    """Query a Repo for Asset data"""
     RepoId.validate_repo_id(repo_id)
     asset = asset.value
 
@@ -141,7 +150,7 @@ async def asset_collection(
         asset=asset,
         uwi_query=uwi_query,
         task_status=schemas.TaskStatus.PENDING,
-        task_message=f"export file (pending): {export_file}"
+        task_message=f"export file (pending): {export_file}",
     )
     task_storage[task_id] = new_collect
 
@@ -163,16 +172,18 @@ async def asset_collection(
     response_model=schemas.AssetCollectionResponse,
     summary="Check status of a /asset/{repo_id}/{asset} job using the task_id.",
     description=(
-            "An assect collection job may take several minutes, so use the task_id "
-            "returned by the original POST to (periodically) check the job status. "
-            "Status values are: pending, in_progress, completed or failed. Query "
-            "results will be written to the file_depot directory."
+        "An assect collection job may take several minutes, so use the task_id "
+        "returned by the original POST to (periodically) check the job status. "
+        "Status values are: pending, in_progress, completed or failed. Query "
+        "results will be written to the file_depot directory."
     ),
 )
 async def get_asset_collect_status(task_id: str):
+    """Check status of a /asset/{repo_id}/{asset} job using the task_id"""
     if task_id not in task_storage:
         raise HTTPException(status_code=404, detail="Asset collection task not found")
     return task_storage[task_id]
+
 
 # @router.post(
 #     "/collect_data/{repo_id}/{asset}",

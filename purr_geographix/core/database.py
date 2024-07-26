@@ -1,3 +1,5 @@
+"""SQLAlchemy configuration (SQLite)"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import purr_geographix.core.models as models
@@ -13,6 +15,11 @@ models.Base.metadata.create_all(bind=engine)
 
 
 def get_db():
+    """Generator function for local SQLAlchemy database (SQLite)
+
+    Yields:
+        SessionLocal: An instance of a database session
+    """
     db = SessionLocal()
     try:
         yield db

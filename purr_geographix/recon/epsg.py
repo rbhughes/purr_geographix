@@ -1,7 +1,9 @@
+"""Storage and Display EPSG"""
+
 import os
 import re
-import xml.etree.ElementTree
 import xml.etree.ElementTree as ET
+from typing import Dict, Optional, Union, Tuple
 from purr_geographix.core.logger import logger
 
 geodetics = [
@@ -526,48 +528,78 @@ def scrub(s: str) -> str:
     return re.sub(r"[-()]", "", underscored)
 
 
-def get_wkts(fs_path: str) -> dict:
+def get_wkts(fs_path: str) -> Dict[str, str]:
     """Get storage and display string "Well Known Text" from Project.ggx.xml
-
-    Very old projects (<2015) will not have the .xml file. You can sorta get it
-    from the binary project.ggx file, but not reliably. The strings are based
-    on the (now vintage) ESRI dev kit.
 
     Args:
         fs_path (str): The fs_path string to project directory
 
     Returns:
-        dict: storage_wkt and display_wkt
+        Dict[str, str]: A dictionary containing storage_wkt and display_wkt
+    """
+    default_return = {"storage_wkt": "unknown", "display_wkt": "unknown"}
 
-    """
-    """
-    Extract storage and display string "Well Known Text" from GeoGraphix
-    Project.ggx.xml files. Very old projects won't have the .xml file.
-    :param fs_path: Path to project repo
-    :return: storage and display WKT
-    """
+    ggx_xml = os.path.join(fs_path, "Project.ggx.xml")
+
+    if not os.path.exists(ggx_xml):
+        logger.error(f"epsg missing file: {ggx_xml}")
+        return default_return
+
     try:
-        ggx_xml = os.path.join(fs_path, "Project.ggx.xml")
         root = ET.parse(ggx_xml).getroot()
+        storage_wkt = root.find("./Project/StorageCoordinateSystem/ESRI")
+        display_wkt = root.find("./Project/DisplayCoordinateSystem/ESRI")
 
-        storage_wkt = root.find("./Project/StorageCoordinateSystem/ESRI").text
-        display_wkt = root.find("./Project/DisplayCoordinateSystem/ESRI").text
+        if storage_wkt is None or display_wkt is None:
+            logger.error("Required WKT elements not found in XML")
+            return default_return
 
         return {
-            "storage_wkt": scrub(storage_wkt),
-            "display_wkt": scrub(display_wkt),
+            "storage_wkt": scrub(storage_wkt.text or ""),
+            "display_wkt": scrub(display_wkt.text or ""),
         }
-    except FileNotFoundError as fnfe:
-        logger.error(f"epsg missing file (probably Project.ggx.xml): {fnfe}")
-    except xml.etree.ElementTree.ParseError as pe:
+
+    except ET.ParseError as pe:
         logger.error(f"epsg XML parse error: {pe}")
-    except Exception as e:
-        logger.error(f"Mystery epsg error: {e}")
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error(f"Unexpected error in get_wkts: {e}")
 
-    return {"storage_wkt": "unknown", "display_wkt": "unknown"}
+    return default_return
 
 
-def epsg_codes(repo_base) -> dict:
+def _parse_storage_wkt(wkt: str) -> Dict[str, Optional[str]]:
+    s_geog = re.search(r"(?<=GEOGCS\[\").+?(?=\",)", wkt)
+    s_datum = re.search(r"(?<=DATUM\[\").+?(?=\",)", wkt)
+    return {
+        "geog": s_geog[0].lower() if s_geog else None,
+        "datum": s_datum[0].lower() if s_datum else None,
+    }
+
+
+def _parse_display_wkt(wkt: str) -> Dict[str, Optional[str]]:
+    d_geog = re.search(r"(?<=GEOGCS\[\").+?(?=\",)", wkt)
+    d_proj = re.search(r"(?<=PROJCS\[\").+?(?=\",)", wkt)
+    return {
+        "geog": d_geog[0].lower() if d_geog else None,
+        "proj": d_proj[0].lower() if d_proj else None,
+    }
+
+
+def _find_storage_epsg(info: Dict[str, Optional[str]]) -> Tuple[int, str]:
+    for geog, datum, code in geodetics:
+        if geog == info["geog"] and datum == info["datum"]:
+            return code, geog
+    return 0, "unknown"
+
+
+def _find_display_epsg(info: Dict[str, Optional[str]]) -> Tuple[int, str]:
+    for proj, geog, code in projections:
+        if geog == info["geog"] and proj == info["proj"]:
+            return code, proj
+    return 0, "unknown"
+
+
+def epsg_codes(repo_base: Dict[str, str]) -> Dict[str, Union[int, str]]:
     """Make an educated guess on likely storage and display EPSG codes.
 
     This is mostly based on epsg.io and may vary from whatever madness was used
@@ -583,40 +615,32 @@ def epsg_codes(repo_base) -> dict:
     """
     logger.info(f"epsg_codes: {repo_base['fs_path']}")
 
-    storage_epsg = 0
-    storage_name = "unknown"
-    display_epsg = 0
-    display_name = "unknown"
-
-    wkt = get_wkts(repo_base["fs_path"])
-
-    s_geog = re.search(r"(?<=GEOGCS\[\").+?(?=\",)", wkt.get("storage_wkt"))
-    stor_geog = s_geog[0].lower() if s_geog is not None else None
-
-    s_datum = re.search(r"(?<=DATUM\[\").+?(?=\",)", wkt.get("storage_wkt"))
-    stor_datum = s_datum[0].lower() if s_datum is not None else None
-
-    d_geog = re.search(r"(?<=GEOGCS\[\").+?(?=\",)", wkt.get("display_wkt"))
-    disp_geog = d_geog[0].lower() if d_geog is not None else None
-
-    d_proj = re.search(r"(?<=PROJCS\[\").+?(?=\",)", wkt.get("display_wkt"))
-    disp_proj = d_proj[0].lower() if d_proj is not None else None
-
-    for geog, datum, code in geodetics:
-        if geog == stor_geog and datum == stor_datum:
-            storage_epsg = code
-            storage_name = geog
-            break
-
-    for proj, geog, code in projections:
-        if geog == disp_geog and proj == disp_proj:
-            display_epsg = code
-            display_name = proj
-            break
-
-    return {
-        "storage_epsg": storage_epsg,
-        "storage_name": storage_name,
-        "display_epsg": display_epsg,
-        "display_name": display_name,
+    default_return: Dict[str, Union[int, str]] = {
+        "storage_epsg": 0,
+        "storage_name": "unknown",
+        "display_epsg": 0,
+        "display_name": "unknown",
     }
+
+    try:
+        wkt = get_wkts(repo_base["fs_path"])
+
+        storage_info = _parse_storage_wkt(wkt.get("storage_wkt", ""))
+        display_info = _parse_display_wkt(wkt.get("display_wkt", ""))
+
+        storage_epsg, storage_name = _find_storage_epsg(storage_info)
+        display_epsg, display_name = _find_display_epsg(display_info)
+
+        return {
+            "storage_epsg": storage_epsg,
+            "storage_name": storage_name,
+            "display_epsg": display_epsg,
+            "display_name": display_name,
+        }
+
+    except KeyError as ke:
+        logger.error(f"Missing key in repo_base: {ke}")
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error(f"Unexpected error in epsg_codes: {e}")
+
+    return default_return

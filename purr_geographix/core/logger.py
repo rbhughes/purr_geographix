@@ -1,5 +1,7 @@
-from loguru import logger
+"""Shared Logger"""
+
 import sys
+from loguru import logger as loguru_logger
 
 # CRITICAL
 # ERROR
@@ -11,18 +13,22 @@ LOG_LEVEL = "INFO"
 
 
 def setup_logger():
-    # Remove the default logger configuration
-    logger.remove()
+    """Logger with stdout and file logging
 
-    # Add a logger that outputs to console
-    logger.add(
+    Returns:
+        logger: An instance of Loguru
+    """
+    loguru_logger.remove()
+
+    # output to console
+    loguru_logger.add(
         sys.stdout,
         level=LOG_LEVEL,
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {name} | {message}",
     )
 
-    # Add a logger that outputs to a file
-    logger.add(
+    # outputs to file
+    loguru_logger.add(
         "purr.log",
         level=LOG_LEVEL,
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {name} | {message}",
@@ -30,8 +36,7 @@ def setup_logger():
         compression="zip",
     )
 
-    return logger
+    return loguru_logger
 
 
-# Setup the logger
 logger = setup_logger()

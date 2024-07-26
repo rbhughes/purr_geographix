@@ -1,13 +1,15 @@
-import pyodbc
+"""Convenience method for dealing with SQLAnywhere via ODBC"""
+
 import re
 from pathlib import Path
+from typing import Any, Dict, List
+import pyodbc
 from retry import retry
-from typing import Any, Dict, List, Union
 from purr_geographix.core.logger import logger
 
 
 class RetryException(Exception):
-    pass
+    """Stub Class for Retry"""
 
 
 SQLANY_DRIVER = "SQL Anywhere 17"
@@ -32,8 +34,8 @@ def db_exec(conn: dict, sql: str) -> List[Dict[str, Any]] | Exception:
     """
 
     try:
+        # pylint: disable=c-extension-no-member
         with pyodbc.connect(**conn) as connection:
-
             # I suspect LMKR does not modify this per locale, but you should
             # probably verify the gxdb encoding when dealing with non-US data.
             connection.setencoding("CP1252")

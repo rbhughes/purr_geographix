@@ -1,3 +1,5 @@
+"""Recipes that define SQL selections"""
+
 COMPLETION = {
     "primary": {
         "table_name": "well",
@@ -235,7 +237,7 @@ SURVEY = {
 
 # gx_well_curve_values.curve_values are duplicated
 # gx_well_curveset."import date" has a (stupid) space in the column name
-# TODO: wrap "import date" in brackets: [import date] in handle_query
+# need to wrap "import date" in brackets: [import date] in handle_query
 VECTOR_LOG = {
     "primary": {
         "table_name": "well",
@@ -276,8 +278,7 @@ WELL = {
             "table_name": "legal_congress_loc",
             "index_col": "uwi",
         }
-    ]
-
+    ],
 }
 
 ZONE = {

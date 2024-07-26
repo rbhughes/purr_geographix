@@ -1,8 +1,24 @@
+"""GeoGraphix asset query overview.
+
+Asset queries are well-centric. A parent well object is returned with every
+asset type. Actual asset data is returned in 'rollups' of child records.
+Sometimes this makes perfect sense, but occasionally a one-to-one
+relationship is represented as a single-item array.
+
+Why? Ideally, we would specify* exact columns and create more accurate joins
+for each asset. However, schemas changes have resulted in new tables and
+columns over the years, and that will likely continue. We take the pragmatic
+approach and just join on UWI.
+
+* Previous iterations of this utility used fully specified queries; contact
+me if you want more details.
+"""
+
 import json
-import pyodbc
-import pandas as pd
 from pathlib import Path
 from typing import Any, Dict, List, Generator
+import pyodbc
+import pandas as pd
 from purr_geographix.core.database import get_db
 from purr_geographix.core.crud import get_repo_by_id, get_file_depot
 from purr_geographix.assets.collect.select_recipes import recipes
@@ -14,26 +30,11 @@ from purr_geographix.core.util import (
 )
 from purr_geographix.core.logger import logger
 
-"""GeoGraphix asset query overview.
-
-    Asset queries are well-centric. A parent well object is returned with every
-    asset type. Actual asset data is returned in 'rollups' of child records.
-    Sometimes this makes perfect sense, but occasionally a one-to-one 
-    relationship is represented as a single-item array.
-    
-    Why? Ideally, we would specify* exact columns and create more accurate joins
-    for each asset. However, schemas changes have resulted in new tables and 
-    columns over the years, and that will likely continue. We take the pragmatic
-    approach and just join on UWI.
-    
-    * Previous iterations of this utility used fully specified queries; contact
-    me if you want more details.
-"""
 
 formatters = {
     "date": datetime_formatter(),
-    "float": lambda x: safe_numeric(x),
-    "int": lambda x: safe_numeric(x),
+    "float": safe_numeric,
+    "int": safe_numeric,
     "hex": lambda x: (
         x.hex() if isinstance(x, bytes) else (None if pd.isna(x) else str(x))
     ),
@@ -42,11 +43,11 @@ formatters = {
 
 
 def build_where_clause(
-        index_col: str = "uwi",
-        subquery: str = None,
-        subconditions: List[str] = None,
-        conditions: List[str] = None,
-        uwi_query: str = None,
+    index_col: str = "uwi",
+    subquery: str = None,
+    subconditions: List[str] = None,
+    conditions: List[str] = None,
+    uwi_query: str = None,
 ):
     """Construct a WHERE clause based on a specific asset 'recipe'
 
@@ -96,10 +97,10 @@ def build_where_clause(
 
 
 def build_subquery_clause(
-        index_col: str,
-        subquery: str,
-        subconditions: List[str],
-        uwi_query: str,
+    index_col: str,
+    subquery: str,
+    subconditions: List[str],
+    uwi_query: str,
 ):
     """
     Examples:
@@ -131,10 +132,10 @@ def build_subquery_clause(
 
 
 def read_sql_table_chunked(
-        conn: Dict[str, any],
-        uwi_query: str | None,
-        portion: Dict[str, any],
-        chunksize: int = 10000,
+    conn: Dict[str, any],
+    uwi_query: str | None,
+    portion: Dict[str, any],
+    chunksize: int = 10000,
 ) -> Generator[pd.DataFrame, None, None]:
     """A generator to read chunks of data into DataFrames
 
@@ -168,6 +169,7 @@ def read_sql_table_chunked(
         Returns:
             Dict[str, str]: lower_case column names and datatypes
         """
+        # pylint: disable=c-extension-no-member
         with pyodbc.connect(**conn) as cn:
             cursor = cn.cursor()
 
@@ -183,7 +185,6 @@ def read_sql_table_chunked(
     def read_chunk():
         start_at = 0
         while True:
-
             query = (
                 f"SELECT TOP {chunksize} START AT {start_at + 1} "
                 f"{",".join(columns)} FROM {table_name} "
@@ -192,6 +193,7 @@ def read_sql_table_chunked(
 
             logger.debug(query)
 
+            # pylint: disable=c-extension-no-member
             with pyodbc.connect(**conn) as cn:
                 cursor = cn.cursor()
                 cursor.execute(query)
@@ -262,11 +264,7 @@ def collect_and_assemble_docs(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         if "singles" in recipe:
             for single in recipe["singles"]:
                 orig_index_col = single["index_col"]
-                single_chunks = read_sql_table_chunked(
-                    conn,
-                    uwi_query,
-                    portion=single
-                )
+                single_chunks = read_sql_table_chunked(conn, uwi_query, portion=single)
                 single_chunk = next(single_chunks, pd.DataFrame())
                 if not single_chunk.empty:
                     if single["index_col"] != "uwi":
@@ -350,17 +348,14 @@ def export_json(records, export_file) -> str:
     jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
     out_file = Path(depot_path / export_file)
 
-    with open(out_file, "w") as file:
+    with open(out_file, "w", encoding="utf-8") as file:
         file.write(jd)
 
     return f"Exported {len(records)} docs to: {out_file}"
 
 
 async def selector(
-        repo_id: str,
-        asset: str,
-        export_file: str,
-        uwi_query: str = None
+    repo_id: str, asset: str, export_file: str, uwi_query: str = None
 ) -> str:
     """Main entry point to collect data from a GeoGraphix project
 
@@ -376,6 +371,10 @@ async def selector(
     db = next(get_db())
     repo = get_repo_by_id(db, repo_id)
     db.close()
+
+    if repo is None:
+        return "Query returned no results"
+
     conn = repo.conn
 
     collection_args = {
@@ -391,8 +390,6 @@ async def selector(
 
     if len(records) > 0:
         async_export_json = async_wrap(export_json)
-        summary = await async_export_json(records, export_file)
-        return summary
+        return await async_export_json(records, export_file)
     else:
-        summary = "Query returned no results"
-        return summary
+        return "Query returned no results"

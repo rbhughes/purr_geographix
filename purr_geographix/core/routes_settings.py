@@ -1,9 +1,11 @@
+"""FastAPI Routing for Settings and Repo Recon"""
+
 import asyncio
 import json
 import uuid
+from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Dict
 import purr_geographix.core.schemas as schemas
 import purr_geographix.core.crud as crud
 from purr_geographix.core.database import get_db
@@ -17,6 +19,7 @@ task_storage: Dict[str, schemas.RepoReconResponse] = {}
 
 
 async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
+    """Trigger repo_recon and update task_storage"""
     try:
         task_storage[task_id].task_status = schemas.TaskStatus.IN_PROGRESS
         repos = await repo_recon(recon_root, ggx_host)
@@ -24,7 +27,7 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
             logger.info(json.dumps(r, indent=4))
 
         task_storage[task_id].task_status = schemas.TaskStatus.COMPLETED
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         task_storage[task_id].task_status = schemas.TaskStatus.FAILED
         logger.error(f"Task failed for {task_id}: {str(e)}")
 
@@ -39,6 +42,7 @@ async def process_repo_recon(task_id: str, recon_root: str, ggx_host: str):
     description="Return the file_depot path.",
 )
 def get_file_depot(db: Session = Depends(get_db)):
+    """Get the directory to store exported JSON files"""
     file_depot = crud.get_file_depot(db)
     return {"file_depot": file_depot}
 
@@ -48,26 +52,26 @@ def get_file_depot(db: Session = Depends(get_db)):
     response_model=schemas.Settings,
     summary="Set the directory to store exported JSON files.",
     description=(
-            "The file_depot should be a directory accessible to this API server. "
-            "Data extracted from project databases get written as JSON files here, "
-            "each with a unique file name containing source repo and asset type."
+        "The file_depot should be a directory accessible to this API server. "
+        "Data extracted from project databases get written as JSON files here, "
+        "each with a unique file name containing source repo and asset type."
     ),
 )
 def update_file_depot(file_depot: str, db: Session = Depends(get_db)):
-    valid_dir = is_valid_dir(file_depot)
-    if not valid_dir:
+    """Set the directory to store exported JSON files"""
+    if not is_valid_dir(file_depot):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid directory: {file_depot}",
         )
     try:
-        file_depot = crud.update_file_depot(db=db, file_depot=valid_dir)
-        return {"file_depot": file_depot}
+        updated_depot = crud.update_file_depot(db=db, file_depot=file_depot)
+        return {"file_depot": updated_depot}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while updating the file_depot: {str(e)}",
-        )
+        ) from e
 
 
 # REPOS #######################################################################
@@ -76,11 +80,12 @@ def update_file_depot(file_depot: str, db: Session = Depends(get_db)):
     response_model=list[schemas.Repo],
     summary="Get list of Repos (full)",
     description=(
-            "Get a list of all Repos known to the API server. This includes the"
-            "potentially large polygon array defining spatial extents."
+        "Get a list of all Repos known to the API server. This includes the"
+        "potentially large polygon array defining spatial extents."
     ),
 )
 def read_repos(db: Session = Depends(get_db)):
+    """Get list of Repos (full)"""
     repos = crud.get_repos(db)
     return repos
 
@@ -91,7 +96,8 @@ def read_repos(db: Session = Depends(get_db)):
     summary="Get list of Repos (minimal)",
     description="Get a list of all Repos with only minimal metadata",
 )
-def read_repos(db: Session = Depends(get_db)):
+def get_repos(db: Session = Depends(get_db)):
+    """Get list of Repos (minimal)"""
     repos = crud.get_repos(db)
     return repos
 
@@ -101,12 +107,15 @@ def read_repos(db: Session = Depends(get_db)):
     response_model=schemas.Repo,
     summary="Get a specific Repo by ID",
     description=(
-            "Returns all metadata on a single Repo. Use GET /repos/minimal "
-            "to see a list Repo IDs along with names and file paths."
+        "Returns all metadata on a single Repo. Use GET /repos/minimal "
+        "to see a list Repo IDs along with names and file paths."
     ),
 )
-def read_repos(repo_id: str, db: Session = Depends(get_db)):
+def get_repo_by_id(repo_id: str, db: Session = Depends(get_db)):
+    """Get a specific Repo by ID"""
     repo = crud.get_repo_by_id(db, repo_id)
+    if repo is None:
+        raise HTTPException(status_code=404, detail=f"Repo with id {repo_id} not found")
     return repo
 
 
@@ -116,15 +125,16 @@ def read_repos(repo_id: str, db: Session = Depends(get_db)):
     response_model=schemas.RepoReconResponse,
     summary="Scan network path for GeoGraphix projects.",
     description=(
-            "Supply a top-level 'recon_root' path (or Project Home) to scan for"
-            "projects (a.k.a. repos). Metadata will be collected for valid repos "
-            "and stored in a local database. Collect asset data from these 'known' "
-            "repos later. The task_id is returned immediately; use GET with "
-            "task_id to get task status."
+        "Supply a top-level 'recon_root' path (or Project Home) to scan for"
+        "projects (a.k.a. repos). Metadata will be collected for valid repos "
+        "and stored in a local database. Collect asset data from these 'known' "
+        "repos later. The task_id is returned immediately; use GET with "
+        "task_id to get task status."
     ),
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def run_repo_recon(recon_root: str, ggx_host: str = hostname()):
+    """Scan network path for GeoGraphix projects"""
     valid_recon_root = is_valid_dir(recon_root)
     if not valid_recon_root:
         raise HTTPException(
@@ -151,12 +161,13 @@ async def run_repo_recon(recon_root: str, ggx_host: str = hostname()):
     response_model=schemas.RepoReconResponse,
     summary="Check the status of a /repos/recon job using the task_id.",
     description=(
-            "A recon job may take several minutes, so use the task_id returned "
-            "by the original POST to (periodically) check the job status. Possible "
-            "status values are: pending, in_progress, completed or failed."
+        "A recon job may take several minutes, so use the task_id returned "
+        "by the original POST to (periodically) check the job status. Possible "
+        "status values are: pending, in_progress, completed or failed."
     ),
 )
 async def get_repo_recon_status(task_id: str):
+    """Check the status of a /repos/recon job using the task_id"""
     if task_id not in task_storage:
         raise HTTPException(status_code=404, detail="repo recon not found")
     return task_storage[task_id]
