@@ -49,18 +49,20 @@ def db_exec(conn: dict, sql: str) -> List[Dict[str, Any]] | Exception:
                 ]
 
     except pyodbc.OperationalError as oe:
-        logger.error({"error": oe, "context": conn})
+        logger.error(f"{oe}, context: {conn}")
+        # raise oe
         if re.search(r"Database name not unique", str(oe)):
             conn.pop("dbf")
             raise RetryException from oe
         else:
-            return oe
+            raise oe
     except pyodbc.ProgrammingError as pe:
-        logger.error({"error": pe, "context": conn})
-        if re.search(r"Table .* not found", str(pe)):
-            return pe
+        logger.error(f"{pe}, context: {conn}")
+        raise pe
+        # if re.search(r"Table .* not found", str(pe)):
+        #     return pe
     except Exception as ex:
-        logger.error({"error": ex, "context": conn})
+        logger.error(f"{ex}, context: {conn}")
         raise ex
 
 

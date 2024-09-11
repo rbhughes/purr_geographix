@@ -42,7 +42,7 @@ async def repo_recon(
     repo_paths = await network_repo_scan(recon_root)
     repo_list = [create_repo_base(rp, ggx_host) for rp in repo_paths]
 
-    # make another pass to verify gxdb (now that we have a conn)
+    # make another pass to verify gxdb
     repo_list = [repo_base for repo_base in repo_list if check_gxdb(repo_base)]
 
     augment_funcs = [well_counts, get_polygon, epsg_codes, dir_stats, repo_mod]

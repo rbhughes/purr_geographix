@@ -1,6 +1,7 @@
 """Stuff involving metadata within Repo databases"""
 
 from typing import Dict, List, Optional, Tuple
+from shapely.geometry import Polygon, MultiPolygon
 import numpy as np
 import alphashape  # mypy: ignore-missing-imports
 from purr_geographix.core.sqlanywhere import db_exec
@@ -74,7 +75,7 @@ def check_gxdb(repo_base) -> bool:
     """
     res = db_exec(repo_base["conn"], "select db_name()")
     if isinstance(res, Exception):
-        logger.warning(f"Looks like a ggx project but invalid gxdb?: {res}")
+        logger.warning(f"Looks like a GGX project but has invalid gxdb?: {res}")
         return False
     elif isinstance(res, list):
         return True
@@ -116,7 +117,7 @@ def well_counts(repo_base) -> Dict[str, Optional[int]]:
         res = db_exec(repo_base["conn"], sql)
 
         if isinstance(res, Exception):
-            logger.error({"context": repo_base["fs_path"], "error": res})
+            logger.error(f"{res}, context: {repo_base["fs_path"]}")
             counts[key] = None
         else:
             counts[key] = res[0]["tally"] or 0
@@ -140,9 +141,21 @@ def concave_hull(points, alpha=0.5) -> Optional[List[Tuple[float, float]]]:
     if alpha_shape.is_empty:
         return None
     else:
-        return [
-            (float(coord[0]), float(coord[1])) for coord in alpha_shape.exterior.coords
-        ]
+        if isinstance(alpha_shape, Polygon):
+            return [
+                (float(coord[0]), float(coord[1]))
+                for coord in alpha_shape.exterior.coords
+            ]
+        elif isinstance(alpha_shape, MultiPolygon):
+            # exterior of the largest polygon in MultiPolygon
+            largest_polygon = max(alpha_shape.geoms, key=lambda p: p.area)
+            return [
+                (float(coord[0]), float(coord[1]))
+                for coord in largest_polygon.exterior.coords
+            ]
+        else:
+            logger.warning(f"Unexpected geometry type: {type(alpha_shape)}")
+            return None
 
 
 def get_polygon(repo_base) -> Dict[str, Optional[List[Tuple[float, float]]]]:
@@ -169,29 +182,19 @@ def get_polygon(repo_base) -> Dict[str, Optional[List[Tuple[float, float]]]]:
     res = db_exec(repo_base["conn"], NOTNULL_LONLAT)
 
     if isinstance(res, Exception):
-        logger.error({"context": repo_base["fs_path"], "error": res})
+        logger.error(f"{res}, context: {repo_base["fs_path"]}")
         return {"polygon": None}
 
     points = [[r["lon"], r["lat"]] for r in res]
 
     if len(points) < 3:
-        logger.error(
-            {
-                "context": repo_base["fs_path"],
-                "error": f"Too few valid Lon/Lat for hull: {repo_base["name"]}",
-            }
-        )
+        logger.warning(f"Too few valid Lon/Lat, context: {repo_base["name"]}")
         return {"polygon": None}
 
     hull = concave_hull(points)
     if hull is None:
         # a weird edge case I've only seen in very old <2015 vintage projects
-        logger.error(
-            {
-                "context": repo_base["fs_path"],
-                "error": "The concave_hull was null, suggesting pre-SQLA17",
-            }
-        )
+        logger.error(f"Null hull? (pre-SQLA17 gxdb), {repo_base['fs_path']}")
         return {"polygon": None}
 
     first_point = hull[0]

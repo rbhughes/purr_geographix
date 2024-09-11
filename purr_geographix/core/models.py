@@ -53,9 +53,8 @@ class Settings(Base):
     __tablename__ = "settings"
 
     file_depot = Column(
-        # String, primary_key=True, nullable=True, server_default="C:/Users/bryan"
         String,
         primary_key=True,
         nullable=True,
-        server_default="C:/Users/bryan",
+        server_default="C:/temp",
     )

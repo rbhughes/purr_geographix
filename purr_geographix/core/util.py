@@ -6,6 +6,7 @@ import hashlib
 import json
 import socket
 import time
+import importlib.util
 from datetime import datetime, date
 from functools import wraps, partial
 from pathlib import Path
@@ -59,16 +60,19 @@ def generate_repo_id(fs_path: str) -> str:
     This is intentional.
 
     Examples:
-        //scarab/ggx_projects/blank_us_nad27_mean ~~> "BLA_0F0588"
+        //scarab/petra_projects/blank_us_nad27_mean ~~> "BLA_0F0588"
 
     Args:
         fs_path (str): Full path to a repo (project) directory.
 
     Returns:
-        str: Short, unique id that is easier for humans to work with than UUID
+        str: Short, unique id that is easier for humans to work with than UUID.
+        Pad with "_" if resulting name length is fewer than 3 chars.
     """
     fp = Path(fs_path)
     prefix = fp.name.upper()[:3]
+    if len(fp.name) < 3:
+        prefix = prefix.ljust(3, "_")
     suffix = hashlib.md5(str(fp).lower().encode()).hexdigest()[:6]
     return f"{prefix}_{suffix}".upper()
 
@@ -187,7 +191,7 @@ def safe_numeric(x):
         x (Any): Some alleged numeric
 
     Returns:
-        Number or None: _description_
+        Number or None: a sanitized number
     """
     # see usage in handle_query()
     if pd.isna(x) or x == "":
@@ -246,3 +250,11 @@ def debugger(func: Callable[..., Any]) -> Callable[..., Any]:
             raise e
 
     return wrapper
+
+
+def import_dict_from_file(file_path, dict_name):
+    """TODO: stuff"""
+    spec = importlib.util.spec_from_file_location("module", file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, dict_name)

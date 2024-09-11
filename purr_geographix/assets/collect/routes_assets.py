@@ -6,6 +6,7 @@ from typing import Dict
 from enum import Enum
 from fastapi import APIRouter, HTTPException, status, Query, Path
 from pydantic import BaseModel
+
 from purr_geographix.assets.collect.handle_query import selector
 from purr_geographix.core.database import get_db
 from purr_geographix.core.crud import fetch_repo_ids
@@ -75,14 +76,14 @@ def parse_uwis(uwis: str | None) -> str | None:
         return uwis
 
     try:
-        cleaned = uwis.strip()
         split = [
-            item for item in cleaned.replace(",", " ").replace('"', "").split() if item
+            item
+            for item in uwis.strip().replace(",", " ").replace('"', "").split()
+            if item
         ]
-        processed = [item.replace("*", "%").replace("'", "''") for item in split]
-        uwi_query = "|".join(processed)
-        logger.debug(f"parse_uwi returns: {uwi_query}")
-        return uwi_query
+        parsed = [item.replace("*", "%").replace("'", "''") for item in split]
+        logger.debug(f"parse_uwi returns: {parsed}")
+        return parsed
     except AttributeError:
         logger.error(f"'uwis' must be a string, not {type(uwis)}")
         return uwis
@@ -97,12 +98,12 @@ task_storage: Dict[str, schemas.AssetCollectionResponse] = {}
 
 
 async def process_asset_collection(
-    task_id: str, repo_id: str, asset: str, export_file: str, uwi_query: str
+    task_id: str, repo_id: str, asset: str, export_file: str, uwi_list: str
 ):
     """Trigger selector and update task_storage"""
     try:
         task_storage[task_id].task_status = schemas.TaskStatus.IN_PROGRESS
-        res = await selector(repo_id, asset, export_file, uwi_query)
+        res = await selector(repo_id, asset, export_file, uwi_list)
         logger.info(res)
         task_storage[task_id].task_message = res
         task_storage[task_id].task_status = schemas.TaskStatus.COMPLETED
@@ -113,6 +114,8 @@ async def process_asset_collection(
 
 
 # ASSETS ######################################################################
+
+
 @router.post(
     "/asset/{repo_id}/{asset}",
     response_model=schemas.AssetCollectionResponse,
@@ -138,7 +141,7 @@ async def asset_collection(
     RepoId.validate_repo_id(repo_id)
     asset = asset.value
 
-    uwi_query = parse_uwis(uwi_query)
+    uwi_list = parse_uwis(uwi_query)
 
     task_id = str(uuid.uuid4())
 
@@ -148,7 +151,7 @@ async def asset_collection(
         id=task_id,
         repo_id=repo_id,
         asset=asset,
-        uwi_query=uwi_query,
+        uwi_list=uwi_list,
         task_status=schemas.TaskStatus.PENDING,
         task_message=f"export file (pending): {export_file}",
     )
@@ -161,7 +164,7 @@ async def asset_collection(
             repo_id,
             asset,
             export_file,
-            uwi_query,
+            uwi_list,
         )
     )
     return new_collect

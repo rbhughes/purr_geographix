@@ -162,4 +162,4 @@ cython_debug/
 #.idea/
 
 scribbles.txt
-purrio.sqlite
+purr_geographix.sqlite

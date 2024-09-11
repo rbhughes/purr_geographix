@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import purr_geographix.core.models as models
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./purrio.sqlite"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./purr_geographix.sqlite"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
