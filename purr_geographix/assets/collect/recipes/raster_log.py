@@ -1,38 +1,43 @@
 """GeoGraphix raster_log"""
 
-from purr_geographix.assets.collect.xformer import PURR_DELIM, PURR_NULL, PURR_WHERE
+from purr_geographix.assets.collect.xformer import PURR_WHERE
 
-# identifier_keys = ["w_uwi", "r_log_section_index"]
-# id_form = " || '-' || ".join([f"CAST({i} AS VARCHAR(10))" for i in identifier_keys])
+
+"""
+v AS (
+    SELECT
+    bfile_data                   AS v_bfile_data,
+    blk_no                       AS v_blk_no,
+    blob_data                    AS v_blob_data,
+    blob_data                    AS v_blob_data_orig,
+    bytes_used                   AS v_bytes_used,
+    datatype                     AS v_datatype,
+    ow_rel_path                  AS v_ow_rel_path,
+    vec_storage_type             AS v_vec_storage_type,
+    vid                          AS v_vid
+FROM log_depth_cal_vec
+)
+
+JOIN v ON 
+    r.r_log_depth_cal_vid = v.v_vid
+"""
+
 
 selector = f"""
     WITH w AS (
         SELECT
-            gx_wsn           AS w_gx_wsn,
-            uwi              AS w_uwi,
-            well_name        AS w_well_name,
-            well_number      AS w_well_number,
-            operator         AS w_operator,
-            lease_name       AS w_lease_name,
-            lease_number     AS w_lease_number,
-            county           AS w_county,
-            province_state   AS w_province_state,
+            gx_wsn                       AS w_gx_wsn,
+            uwi                          AS w_uwi,
+            well_name                    AS w_well_name,
+            well_number                  AS w_well_number,
+            operator                     AS w_operator,
+            lease_name                   AS w_lease_name,
+            lease_number                 AS w_lease_number,
+            county                       AS w_county,
+            province_state               AS w_province_state,
             row_changed_date             AS w_row_changed_date
         FROM well
     ),
-    --v AS (
-    --    SELECT
-    --        bfile_data                   AS v_bfile_data,
-    --        blk_no                       AS v_blk_no,
-    --        blob_data                    AS v_blob_data,
-    --        blob_data                    AS v_blob_data_orig,
-    --        bytes_used                   AS v_bytes_used,
-    --        datatype                     AS v_datatype,
-    --        ow_rel_path                  AS v_ow_rel_path,
-    --        vec_storage_type             AS v_vec_storage_type,
-    --        vid                          AS v_vid
-    --    FROM log_depth_cal_vec
-    --),
     r AS (
         SELECT
             log_section_index            AS r_log_section_index,
@@ -82,13 +87,10 @@ selector = f"""
     )
     SELECT
         w.*,
-        --v.*,
         r.*
     FROM w
     JOIN r ON
         r.r_well_id = w.w_uwi
-    --JOIN v ON 
-    --    r.r_log_depth_cal_vid = v.v_vid
     {PURR_WHERE}
     """
 
@@ -108,9 +110,9 @@ recipe = {
         "v_": "log_depth_cal_vec",
         "r_": "log_image_reg_log_section",
     },
-    # "identifier_keys": identifier_keys,
     "xforms": {
-        "w_chgdate": "excel_date",
+        "v_blob_data": "decode_depth_registration",
+        "v_blob_data_orig": "blob_to_hex",
     },
     "post_process": "raster_log_agg",
     "chunk_size": 100,
