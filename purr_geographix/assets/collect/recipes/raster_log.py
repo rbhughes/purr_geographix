@@ -96,12 +96,11 @@ selector = f"""
 
 identifier = f"""
     SELECT
-        DISTINCT uwi AS w_uwi
-    FROM well w
-    JOIN log_image_reg_log_section r
-        ON w.uwi = r.well_id
+        DISTINCT r.well_id AS w_uwi
+    FROM log_image_reg_log_section r
     {PURR_WHERE}
     """
+
 recipe = {
     "selector": selector,
     "identifier": identifier,
@@ -115,5 +114,5 @@ recipe = {
         "v_blob_data_orig": "blob_to_hex",
     },
     "post_process": "raster_log_agg",
-    "chunk_size": 100,
+    "chunk_size": 1000,
 }

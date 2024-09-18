@@ -129,7 +129,7 @@ def safe_bool(x: Any) -> bool:
 
 def safe_float(x: Optional[float]) -> Optional[float]:
     """Convert input to a float or None"""
-    if pd.isna(x):
+    if x is None or pd.isna(x):
         return None
     try:
         result = float(x)
@@ -179,117 +179,26 @@ def blob_to_hex(x):
     return f"0x{x.hex()}"
 
 
-# def excel_date(x):
-#     """Convert Petra's weird (excel?) date float to ISO date"""
-#     if x is None:
-#         return None
-#     if re.match(r"1[eE]\+?30", str(x), re.IGNORECASE):
-#         return None
-#     try:
-#         return (datetime(1970, 1, 1) + timedelta(days=float(x) - 25569)).isoformat()
-#     except (ValueError, TypeError):
-#         return None
+# def decode_curve_values(x: Optional[bytes]) -> List[float]:
+#     print("...............................................")
+#     curve_vals = []
+#     buf = bytearray(x)
+#     for i in range(2, len(buf), 4):
+#         cval_bytes = buf[i : i + 4]  # 32 bit float
+#         cval = struct.unpack("<f", cval_bytes)[0]
+#         curve_vals.append(cval)
+#     return curve_vals
 
 
-# def logdata_digits(x):
-#     """Unpack log curve digits from a bytes"""
+def decode_curve_values(x: Optional[bytes]) -> List[float]:
+    if not x:
+        return []
 
-#     if x is None or len(x) == 0:
-#         return None
+    # Slice the buffer to exclude the first two bytes
+    buf = memoryview(x)[2:]
 
-#     arr = np.frombuffer(x, dtype=np.float64)
-#     if np.any(~np.isfinite(arr)):
-#         raise ValueError("Input contains non-finite values")
-
-#     return arr
-
-
-# def loglas_lashdr(x):
-#     """decode the LAS header"""
-#     if x is None or len(x) == 0:
-#         return None
-
-#     b = [re.sub(r'^"|"$', "", r) for r in bytes(x).decode("utf-8").split(";")]
-#     return "\n".join(b)
-
-
-# def parse_congressional(
-#     x: Optional[bytes],
-# ) -> Optional[Dict[str, Union[Optional[str], Optional[float], Optional[int]]]]:
-#     """parse binary congressional data to a dict"""
-#     if x is None:
-#         return None
-
-#     return {
-#         "township": decode_string(x, 4, 6),
-#         "township_ns": decode_string(x, 71, 72),
-#         "range": decode_string(x, 21, 23),
-#         "range_ew": decode_string(x, 70, 71),
-#         "section": decode_string(x, 38, 54),
-#         "section_suffix": decode_string(x, 54, 70),
-#         "meridian": decode_string(x, 153, 155),
-#         "footage_ref": decode_string(x, 137, 152),
-#         "spot": decode_string(x, 96, 136),
-#         "footage_call_ns": unpack_double(x, 88),
-#         "footage_call_ns_ref": unpack_short(x, 76),
-#         "footage_call_ew": unpack_double(x, 80),
-#         "footage_call_ew_ref": unpack_short(x, 72),
-#         "remarks": decode_string(x, 156, 412),
-#     }
-
-
-# def pdtest_treatment(x: Optional[bytes]) -> Optional[List[Dict[str, Any]]]:
-#     """parse binary pdtest.treat data to a dict"""
-
-#     def parse_treatment(buffer):
-#         return {
-#             "type": decode_string(buffer, 0, 9),
-#             "top": unpack_double(buffer, 9),
-#             "base": unpack_double(buffer, 17),
-#             "amount1": unpack_double(buffer, 25),
-#             "units1": decode_string(buffer, 61, 65),
-#             "desc": decode_string(buffer, 68, 89),
-#             "agent": decode_string(buffer, 89, 96),
-#             "amount2": unpack_double(buffer, 33),
-#             "units2": decode_string(buffer, 96, 100),
-#             "fmbrk": unpack_double(buffer, 41),
-#             "num_stages": unpack_int(buffer, 57),
-#             "additive": decode_string(buffer, 103, 110),
-#             "inj_rate": unpack_double(buffer, 49),
-#         }
-
-#     num_bytes = 110
-#     treatments = (
-#         [parse_treatment(x[i : i + num_bytes]) for i in range(0, len(x), num_bytes)]
-#         if x is not None
-#         else []
-#     )
-#     return treatments
-
-
-# def fmtest_recovery(x: Optional[bytes]) -> List[Dict[str, Union[float, str]]]:
-#     if x is None:
-#         return []
-
-#     def parse_recovery(buffer):
-#         return {
-#             "amount": unpack_double(buffer, 0),
-#             "units": decode_string(buffer, 8, 15),
-#             "descriptions": decode_string(buffer, 15, 36),
-#         }
-
-#     num_bytes = 36
-#     recoveries = (
-#         [parse_recovery(x[i : i + num_bytes]) for i in range(0, len(x), num_bytes)]
-#         if x is not None
-#         else []
-#     )
-#     return recoveries
-
-
-# def parse_zztops(x: Optional[bytes]) -> List[float]:
-#     num_bytes = 28
-#     return [unpack_double(x, i) for i in range(4, len(x), num_bytes)]
+    # Use struct.unpack_from to unpack multiple floats at once
+    return list(struct.unpack_from(f"<{len(buf)//4}f", buf))
 
 
 def array_of_int(x):
@@ -347,4 +256,5 @@ formatters = {
     "array_of_float": array_of_float,
     "array_of_string": array_of_string,
     "array_of_datetime": array_of_datetime,
+    "decode_curve_values": decode_curve_values,
 }

@@ -174,7 +174,7 @@ recipe = {
         "c_": "legal_congress_loc",
     },
     "xforms": {
-        "w_gx_dev_well_blob": "blob_to_hex",
+        # "w_gx_dev_well_blob": "blob_to_hex",
     },
-    "chunk_size": 100,
+    "chunk_size": 1000,
 }

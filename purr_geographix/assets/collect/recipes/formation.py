@@ -84,12 +84,11 @@ selector = f"""
 
 identifier = f"""
     SELECT
-        DISTINCT w.uwi AS w_uwi
-    FROM well w
-    JOIN well_formation f
-        ON w.uwi = f.uwi
+        DISTINCT f.uwi AS w_uwi
+    FROM well_formation f
     {PURR_WHERE}
     """
+
 recipe = {
     "selector": selector,
     "identifier": identifier,
@@ -148,5 +147,5 @@ recipe = {
         "f_unconformity_name": "array_of_string",
         "f_uwi": "array_of_string",
     },
-    "chunk_size": 100,
+    "chunk_size": 1000,
 }

@@ -160,6 +160,7 @@ identifier = f"""
         ON w.uwi = t.uwi AND t.test_type = 'DST'
     {PURR_WHERE}
     """
+
 recipe = {
     "selector": selector,
     "identifier": identifier,
@@ -241,5 +242,5 @@ recipe = {
         "f_test_number": "array_of_int",
         "p_tts_elapsed_time": "array_of_string",
     },
-    "chunk_size": 100,
+    "chunk_size": 1000,
 }

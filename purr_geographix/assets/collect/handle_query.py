@@ -244,9 +244,9 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
 
     id_sql = recipe["identifier"].replace(PURR_WHERE, where)
 
-    print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-    print(id_sql)
-    print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
+    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
+    # print(id_sql)
+    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
 
     ids = fetch_id_list(conn_params, id_sql)
 
@@ -275,9 +275,9 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
         f.write("[")  # Start of JSON array
 
         for q in selectors:
-            print("qqqqqqqqqqqqqqqqqqqqqqqqqqq")
-            print(q)
-            print("qqqqqqqqqqqqqqqqqqqqqqqqqqq")
+            # print("qqqqqqqqqqqqqqqqqqqqqqqqqqq")
+            # print(q)
+            # print("qqqqqqqqqqqqqqqqqqqqqqqqqqq")
 
             # pylint: disable=c-extension-no-member
             with pyodbc.connect(**conn_params) as conn:
@@ -316,6 +316,8 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
                     # transform this chunk by table prefixes
                     json_data = transform_dataframe_to_json(df, recipe["prefixes"])
 
+                    print("==========================>", len(json_data))
+
                     # TODO: test efficiency vs memory (maybe just send it all)
                     for json_obj in json_data:
                         json_str = json.dumps(json_obj, default=str)
@@ -329,33 +331,6 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
         "message": f"{docs_written} docs written",
         "out_file": out_file,
     }
-
-
-# def export_json(records, export_file) -> str:
-#     """Convert dicts to JSON and save the file.
-
-#     Args:
-#         records (List[Dict[str, Any]]): The list of dicts obtained by
-#         collect_and_assemble_docs.
-#         export_file (str): The timestamp export file name defined earlier
-
-#     Returns:
-#         str: A summary containing counts and file path
-
-#     TODO: Investigate streaming?
-#     """
-#     db = next(get_db())
-#     file_depot = get_file_depot(db)
-#     db.close()
-#     depot_path = Path(file_depot)
-
-#     jd = json.dumps(records, indent=4, cls=CustomJSONEncoder)
-#     out_file = Path(depot_path / export_file)
-
-#     with open(out_file, "w", encoding="utf-8") as file:
-#         file.write(jd)
-
-#     return f"Exported {len(records)} docs to: {out_file}"
 
 
 async def selector(

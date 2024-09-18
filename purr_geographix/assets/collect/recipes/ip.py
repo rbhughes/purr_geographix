@@ -95,9 +95,10 @@ identifier = f"""
         DISTINCT w.uwi AS w_uwi
     FROM well w
     JOIN well_test t
-        ON w.uwi = t.uwi
+        ON w.uwi = t.uwi AND t.test_type = 'IP'
     {PURR_WHERE}
     """
+
 recipe = {
     "selector": selector,
     "identifier": identifier,
@@ -156,5 +157,6 @@ recipe = {
         "t_water_flow_amt": "array_of_float",
         "t_water_flow_amt_uom": "array_of_string",
     },
-    "chunk_size": 100,
+    "post_process": "ip_agg",
+    "chunk_size": 1000,
 }

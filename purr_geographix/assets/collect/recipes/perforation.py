@@ -60,12 +60,11 @@ selector = f"""
 
 identifier = f"""
     SELECT
-        DISTINCT w.uwi AS w_uwi
-    FROM well w
-    JOIN well_perforation p
-        ON w.uwi = p.uwi
+        DISTINCT p.uwi AS w_uwi
+    FROM well_perforation p
     {PURR_WHERE}
     """
+
 recipe = {
     "selector": selector,
     "identifier": identifier,
@@ -100,5 +99,5 @@ recipe = {
         "p_top_form": "array_of_string",
         "p_uwi": "array_of_string",
     },
-    "chunk_size": 100,
+    "chunk_size": 1000,
 }

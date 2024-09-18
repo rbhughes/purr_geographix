@@ -105,15 +105,13 @@ selector = f"""
     {PURR_WHERE}
     """
 
-# maybe use well_cumulative_production, but not sure if trigger is 100% valid
 identifier = f"""
     SELECT
-        DISTINCT w.uwi AS w_uwi
-    FROM well w
-    JOIN gx_pden_vol_sum_by_month g
-        ON w.uwi = g.uwi
+        DISTINCT g.uwi AS w_uwi
+    FROM gx_pden_vol_sum_by_month g
     {PURR_WHERE}
     """
+
 recipe = {
     "selector": selector,
     "identifier": identifier,
@@ -134,5 +132,5 @@ recipe = {
         "m_volume_year": "array_of_int",
         "m_water_volume": "array_of_float",
     },
-    "chunk_size": 100,
+    "chunk_size": 1000,
 }

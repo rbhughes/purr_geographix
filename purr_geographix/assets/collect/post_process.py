@@ -35,41 +35,41 @@ def flexible_agg(
     return df.groupby("w_uwi", as_index=False).agg(agg_dict)
 
 
-def dst_agg(df: pd.DataFrame) -> pd.DataFrame:
-    return flexible_agg(
-        df,
-        prefix_list=["f_"],
-        empty_list_cols=["f_recov"],
-    )
+# def dst_agg(df: pd.DataFrame) -> pd.DataFrame:
+#     return flexible_agg(
+#         df,
+#         prefix_list=["f_"],
+#         empty_list_cols=["f_recov"],
+#     )
 
 
-def formation_agg(df: pd.DataFrame) -> pd.DataFrame:
-    return flexible_agg(
-        df,
-        prefix_list=["f_", "z_", "t_"],
-    )
+# def formation_agg(df: pd.DataFrame) -> pd.DataFrame:
+#     return flexible_agg(
+#         df,
+#         prefix_list=["f_", "z_", "t_"],
+#     )
 
 
 def ip_agg(df: pd.DataFrame) -> pd.DataFrame:
     return flexible_agg(
         df,
-        prefix_list=["p_"],
-        empty_list_cols=["p_treat"],
+        prefix_list=["t_"],
+        # empty_list_cols=["p_treat"],
     )
 
 
-def perforation_agg(df: pd.DataFrame) -> pd.DataFrame:
-    return flexible_agg(
-        df,
-        prefix_list=["p_"],
-    )
+# def perforation_agg(df: pd.DataFrame) -> pd.DataFrame:
+#     return flexible_agg(
+#         df,
+#         prefix_list=["p_"],
+#     )
 
 
-def production_agg(df: pd.DataFrame) -> pd.DataFrame:
-    return flexible_agg(
-        df,
-        prefix_list=["a_"],
-    )
+# def production_agg(df: pd.DataFrame) -> pd.DataFrame:
+#     return flexible_agg(
+#         df,
+#         prefix_list=["a_"],
+#     )
 
 
 def raster_log_agg(df: pd.DataFrame) -> pd.DataFrame:
@@ -82,23 +82,23 @@ def raster_log_agg(df: pd.DataFrame) -> pd.DataFrame:
 def vector_log_agg(df: pd.DataFrame) -> pd.DataFrame:
     return flexible_agg(
         df,
-        prefix_list=["a_", "f_", "x_", "g_"],
+        prefix_list=["c_", "s_", "v_"],
     )
 
 
 def zone_agg(df: pd.DataFrame) -> pd.DataFrame:
     return flexible_agg(
         df,
-        prefix_list=["n_", "f_", "z_"],
+        prefix_list=["i_", "v_", "z_"],
     )
 
 
 post_process = {
-    "dst_agg": dst_agg,
-    "formation_agg": formation_agg,
+    # "dst_agg": dst_agg,
+    # "formation_agg": formation_agg,
     "ip_agg": ip_agg,
-    "perforation_agg": perforation_agg,
-    "production_agg": production_agg,
+    # "perforation_agg": perforation_agg,
+    # "production_agg": production_agg,
     "raster_log_agg": raster_log_agg,
     "vector_log_agg": vector_log_agg,
     "zone_agg": zone_agg,

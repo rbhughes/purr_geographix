@@ -1,3 +1,18 @@
+NPB test wells
+ completion: 05057065360000
+       core: 05057065850000
+        dst: 05057063230000
+  formation: 05057064990000
+         ip: 05057051320000
+perforation: 05057050660000
+ production: 05057050090000
+ raster_log: 05057050010000
+     survey: 05057065990000
+ vector_log: 05057050050000
+       well: 05057050050000
+       zone: 05057050090002
+
+
 2024-07-19 | poetry stuff
 https://www.digitalocean.com/community/tutorials/how-to-publish-python-packages-to-pypi-using-poetry-on-ubuntu-22-04
 
