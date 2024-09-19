@@ -65,17 +65,24 @@ def ip_agg(df: pd.DataFrame) -> pd.DataFrame:
 #     )
 
 
-# def production_agg(df: pd.DataFrame) -> pd.DataFrame:
-#     return flexible_agg(
-#         df,
-#         prefix_list=["a_"],
-#     )
+def production_agg(df: pd.DataFrame) -> pd.DataFrame:
+    return flexible_agg(
+        df,
+        prefix_list=["p_", "m_"],
+    )
 
 
 def raster_log_agg(df: pd.DataFrame) -> pd.DataFrame:
     return flexible_agg(
         df,
         prefix_list=["v_", "r_"],
+    )
+
+
+def survey_agg(df: pd.DataFrame) -> pd.DataFrame:
+    return flexible_agg(
+        df,
+        prefix_list=["s_", "d_"],
     )
 
 
@@ -98,8 +105,9 @@ post_process = {
     # "formation_agg": formation_agg,
     "ip_agg": ip_agg,
     # "perforation_agg": perforation_agg,
-    # "production_agg": production_agg,
+    "production_agg": production_agg,
     "raster_log_agg": raster_log_agg,
+    "survey_agg": survey_agg,
     "vector_log_agg": vector_log_agg,
     "zone_agg": zone_agg,
 }

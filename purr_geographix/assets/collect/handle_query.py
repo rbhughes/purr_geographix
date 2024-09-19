@@ -290,6 +290,10 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
                     [tuple(row) for row in cursor.fetchall()], columns=column_names
                 )
 
+                # duplicates = df[df.duplicated(subset=["w_uwi"])]
+                # print("ddddddddddddddddddddddddddddd")
+                # print(duplicates)
+
                 df = standardize_df_columns(df, column_types)
 
                 if not df.empty:
@@ -375,11 +379,11 @@ async def selector(
     result = await async_collect_and_assemble_docs(collection_args)
 
     # print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    # print(result)
-    # print("-------------------------------------------------")
-    # # with open(result["out_file"], "r") as file:
-    # #     data = json.load(file)
-    # #     print(json.dumps(data, indent=2))
+    # # print(result)
+    # # print("-------------------------------------------------")
+    # with open(result["out_file"], "r") as file:
+    #     data = json.load(file)
+    #     print(json.dumps(data, indent=2))
     # print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     # return result  # sent to logger
 
