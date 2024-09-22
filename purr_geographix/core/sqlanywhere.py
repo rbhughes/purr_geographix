@@ -31,13 +31,15 @@ def db_exec(conn: dict, sql: str) -> List[Dict[str, Any]] | Exception:
         not unique, trigger a retry without 'dbf' parameter.
         - pyodbc.ProgrammingError: For cases where table(s) might not exist due
         to an unxepected/ancient schema. Schema's >~ 2015 should work.
+        - This retry "trick" does not seem to work if you are connected to a
+        gxdb with SQL Central.
     """
 
     try:
         # pylint: disable=c-extension-no-member
         with pyodbc.connect(**conn) as connection:
             # I suspect LMKR does not modify this per locale, but you should
-            # probably verify the gxdb encoding when dealing with non-US data.
+            # probably verify the gxdb encoding if dealing with non-US data.
             connection.setencoding("CP1252")
 
             with connection.cursor() as cursor:
@@ -50,7 +52,6 @@ def db_exec(conn: dict, sql: str) -> List[Dict[str, Any]] | Exception:
 
     except pyodbc.OperationalError as oe:
         logger.error(f"{oe}, context: {conn}")
-        # raise oe
         if re.search(r"Database name not unique", str(oe)):
             conn.pop("dbf")
             raise RetryException from oe
@@ -59,8 +60,6 @@ def db_exec(conn: dict, sql: str) -> List[Dict[str, Any]] | Exception:
     except pyodbc.ProgrammingError as pe:
         logger.error(f"{pe}, context: {conn}")
         raise pe
-        # if re.search(r"Table .* not found", str(pe)):
-        #     return pe
     except Exception as ex:
         logger.error(f"{ex}, context: {conn}")
         raise ex

@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """GeoGraphix core"""
 
 from purr_geographix.assets.collect.xformer import PURR_DELIM, PURR_NULL, PURR_WHERE
@@ -84,7 +85,7 @@ selector = f"""
             LIST(IFNULL(top_depth_ouom,            '{PURR_NULL}',  CAST(top_depth_ouom AS VARCHAR)),            '{PURR_DELIM}' ORDER BY core_id) AS s_top_depth_ouom,
             LIST(IFNULL(uwi,                       '{PURR_NULL}',  CAST(uwi AS VARCHAR)),                       '{PURR_DELIM}' ORDER BY core_id) AS s_uwi,
             LIST(IFNULL(water_sat,                 '{PURR_NULL}',  CAST(water_sat AS VARCHAR)),                 '{PURR_DELIM}' ORDER BY core_id) AS s_water_sat
-        FROM well_core_sample_ana l
+        FROM well_core_sample_anal
         GROUP BY id_uwi, id_source, id_core_id
     )
     SELECT

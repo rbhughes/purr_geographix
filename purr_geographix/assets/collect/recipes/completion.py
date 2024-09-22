@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """GeoGraphix completion"""
 
 from purr_geographix.assets.collect.xformer import PURR_DELIM, PURR_NULL, PURR_WHERE

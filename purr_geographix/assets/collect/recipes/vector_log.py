@@ -1,6 +1,7 @@
+# pylint: disable=line-too-long
 """GeoGraphix vector_log"""
 
-from purr_geographix.assets.collect.xformer import PURR_DELIM, PURR_NULL, PURR_WHERE
+from purr_geographix.assets.collect.xformer import PURR_WHERE
 
 
 selector = f"""

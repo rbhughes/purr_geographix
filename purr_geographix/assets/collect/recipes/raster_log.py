@@ -1,26 +1,25 @@
+# pylint: disable=line-too-long
 """GeoGraphix raster_log"""
 
 from purr_geographix.assets.collect.xformer import PURR_WHERE
 
 
-"""
-v AS (
-    SELECT
-    bfile_data                   AS v_bfile_data,
-    blk_no                       AS v_blk_no,
-    blob_data                    AS v_blob_data,
-    blob_data                    AS v_blob_data_orig,
-    bytes_used                   AS v_bytes_used,
-    datatype                     AS v_datatype,
-    ow_rel_path                  AS v_ow_rel_path,
-    vec_storage_type             AS v_vec_storage_type,
-    vid                          AS v_vid
-FROM log_depth_cal_vec
-)
+# v AS (
+#     SELECT
+#     bfile_data                   AS v_bfile_data,
+#     blk_no                       AS v_blk_no,
+#     blob_data                    AS v_blob_data,
+#     blob_data                    AS v_blob_data_orig,
+#     bytes_used                   AS v_bytes_used,
+#     datatype                     AS v_datatype,
+#     ow_rel_path                  AS v_ow_rel_path,
+#     vec_storage_type             AS v_vec_storage_type,
+#     vid                          AS v_vid
+# FROM log_depth_cal_vec
+# )
 
-JOIN v ON 
-    r.r_log_depth_cal_vid = v.v_vid
-"""
+# JOIN v ON
+#     r.r_log_depth_cal_vid = v.v_vid
 
 
 selector = f"""

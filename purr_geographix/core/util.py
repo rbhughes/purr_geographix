@@ -1,4 +1,4 @@
-"""Misc Utility methods"""
+"""Misc utility methods"""
 
 import asyncio
 import functools
@@ -86,18 +86,6 @@ def hostname():
     return socket.gethostname().lower()
 
 
-# def hashify(value: Union[str, bytes]) -> str:
-#     if isinstance(value, str):
-#         value = value.lower().encode("utf-8")
-#     if isinstance(value, bytes):
-#         value = value.decode("utf-8")
-#     uuid_obj = uuid.uuid5(uuid.NAMESPACE_OID, value)
-#     return str(uuid_obj)
-
-
-########################
-
-
 class CustomJSONEncoder(json.JSONEncoder):
     """
     A sanitizer for data coming from GeoGraphix projects.
@@ -182,25 +170,6 @@ def datetime_formatter(
         return x
 
     return format_datetime
-
-
-def safe_numeric(x):
-    """Standardize some numeric types
-
-    Args:
-        x (Any): Some alleged numeric
-
-    Returns:
-        Number or None: a sanitized number
-    """
-    # see usage in handle_query()
-    if pd.isna(x) or x == "":
-        return None
-    try:
-        result = pd.to_numeric(x, errors="coerce")
-        return None if pd.isna(result) else result
-    except (ValueError, TypeError, OverflowError):
-        return None
 
 
 def timestamp_filename(repo_id: str, asset: str, ext: str = "json"):

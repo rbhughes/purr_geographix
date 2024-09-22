@@ -1,6 +1,5 @@
-# from pandas import DataFrame as df
 import pandas as pd
-from typing import Any, List, Dict, Callable
+from typing import Any, List
 
 pd.set_option("display.max_colwidth", None)
 pd.set_option("display.max_rows", None)
@@ -14,6 +13,12 @@ def preserve_empty_lists(values: List[Any]) -> List[Any]:
 def flexible_agg(
     df: pd.DataFrame, prefix_list: List[str], empty_list_cols: List[str] = []
 ) -> pd.DataFrame:
+    """Convenience template for defining dataframe-to-json aggregation. This is
+    used where aggregating in SQL alone is problematic. It's basically just a
+    GROUP BY w_uwi with flexible handling of other table prefixes.
+    (the empty_list_cols is used by Petra, just ignore it.)
+    """
+
     def starts_with_any(col: str, prefixes: List[str]) -> bool:
         return any(col.startswith(prefix) for prefix in prefixes)
 
@@ -35,34 +40,12 @@ def flexible_agg(
     return df.groupby("w_uwi", as_index=False).agg(agg_dict)
 
 
-# def dst_agg(df: pd.DataFrame) -> pd.DataFrame:
-#     return flexible_agg(
-#         df,
-#         prefix_list=["f_"],
-#         empty_list_cols=["f_recov"],
-#     )
-
-
-# def formation_agg(df: pd.DataFrame) -> pd.DataFrame:
-#     return flexible_agg(
-#         df,
-#         prefix_list=["f_", "z_", "t_"],
-#     )
-
-
 def ip_agg(df: pd.DataFrame) -> pd.DataFrame:
     return flexible_agg(
         df,
         prefix_list=["t_"],
         # empty_list_cols=["p_treat"],
     )
-
-
-# def perforation_agg(df: pd.DataFrame) -> pd.DataFrame:
-#     return flexible_agg(
-#         df,
-#         prefix_list=["p_"],
-#     )
 
 
 def production_agg(df: pd.DataFrame) -> pd.DataFrame:
@@ -101,10 +84,7 @@ def zone_agg(df: pd.DataFrame) -> pd.DataFrame:
 
 
 post_process = {
-    # "dst_agg": dst_agg,
-    # "formation_agg": formation_agg,
     "ip_agg": ip_agg,
-    # "perforation_agg": perforation_agg,
     "production_agg": production_agg,
     "raster_log_agg": raster_log_agg,
     "survey_agg": survey_agg,

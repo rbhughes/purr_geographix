@@ -11,6 +11,7 @@ from purr_geographix.recon.epsg import epsg_codes
 from purr_geographix.recon.repo_db import well_counts, get_polygon, check_gxdb
 from purr_geographix.recon.repo_fs import network_repo_scan, dir_stats, repo_mod
 from purr_geographix.core.schemas import Repo
+from purr_geographix.core.logger import logger
 
 
 async def repo_recon(
@@ -50,6 +51,7 @@ async def repo_recon(
     async def update_repo(repo_base):
         for func in augment_funcs:
             repo_base.update(await async_wrap(func)(repo_base))
+            logger.debug(f"{repo_base} applied function: {func}")
         return repo_base
 
     repos = await asyncio.gather(*[update_repo(repo) for repo in repo_list])
