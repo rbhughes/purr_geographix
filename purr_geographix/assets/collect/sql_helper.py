@@ -1,4 +1,5 @@
-from typing import Dict, Union, List
+import pyodbc
+from typing import Dict, Union, List, Literal, Tuple, TypeAlias
 
 from purr_geographix.assets.collect.xformer import PURR_WHERE
 
@@ -43,3 +44,76 @@ def create_selectors(
         select_sql = recipe["selector"].replace(PURR_WHERE, in_clause)
         selectors.append(select_sql)
     return selectors
+
+
+ColTypes: TypeAlias = Union[
+    Literal["string", "int64", "float64", "bool", "datetime64[ns]", "object"], str
+]
+
+
+def map_col_type(sql_type) -> ColTypes:
+    """Map SQL data types from pyodbc/SQLAnywhere to pandas data types."""
+    cursor_types = {
+        "str": "string",
+        "int": "int64",
+        "float": "float64",
+        "bool": "bool",
+        "datetime": "datetime64[ns]",
+        "Decimal": "float64",
+        "bytearray": "object",  # any usage?
+        type(None): "object",
+    }
+
+    return cursor_types.get(sql_type, "object")
+
+
+def get_column_info(cursor: pyodbc.Cursor) -> Tuple[List[str], Dict[str, str]]:
+    """Return column names, types from pyodbc/SQLAnywhere"""
+    cursor_desc = cursor.description
+    column_names = [col[0] for col in cursor_desc]
+    column_types = {col[0]: map_col_type(col[1].__name__) for col in cursor_desc}
+    return column_names, column_types
+
+
+def chunk_ids(ids, chunk):
+    """
+    [621, 826, 831, 834, 835, 838, 846, 847, 848]
+    ...with chunk=4...
+    [[621, 826, 831, 834], [835, 838, 846, 847], [848]]
+
+    ["1-62", "1-82", "2-83", "2-83", "2-83", "2-83", "2-84", "3-84", "4-84"]
+    ...with chunk=4...
+    [
+        ['1-62', '1-82'],
+        ['2-83', '2-83', '2-83', '2-83', '2-84'],
+        ['3-84', '4-84']
+    ]
+    Note how the group of 2's is kept together, even if it exceeds chunk=4
+
+    :param ids: This is usually a list of uwis. The ability to handle "compound"
+        ids : ['1-11', '1-22', '1-33', '2-22', '2-44'] is leftover from Petra.
+    :param chunk: The preferred batch size to process in a single query
+    :return: List of id lists
+    """
+    id_groups = {}
+
+    for item in ids:
+        left = str(item).split("-", maxsplit=1)[0]
+        if left not in id_groups:
+            id_groups[left] = []
+        id_groups[left].append(item)
+
+    result = []
+    current_subarray = []
+
+    for group in id_groups.values():
+        if len(current_subarray) + len(group) <= chunk:
+            current_subarray.extend(group)
+        else:
+            result.append(current_subarray)
+            current_subarray = group[:]
+
+    if current_subarray:
+        result.append(current_subarray)
+
+    return result

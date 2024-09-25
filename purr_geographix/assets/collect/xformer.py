@@ -3,8 +3,7 @@
 import re
 import struct
 import numpy as np
-import pyodbc
-from typing import Any, Dict, Optional, Literal, List, Union, Tuple, TypeAlias
+from typing import Any, Dict, Optional, List, Union
 import pandas as pd
 
 
@@ -36,34 +35,6 @@ def unpack_int(buffer, start):
 
 
 ################################################################################
-
-ColTypes: TypeAlias = Union[
-    Literal["string", "int64", "float64", "bool", "datetime64[ns]", "object"], str
-]
-
-
-def map_col_type(sql_type) -> ColTypes:
-    """Map SQL data types from pyodbc/SQLAnywhere to pandas data types."""
-    cursor_types = {
-        "str": "string",
-        "int": "int64",
-        "float": "float64",
-        "bool": "bool",
-        "datetime": "datetime64[ns]",
-        "Decimal": "float64",
-        "bytearray": "object",  # any usage?
-        type(None): "object",
-    }
-
-    return cursor_types.get(sql_type, "object")
-
-
-def get_column_info(cursor: pyodbc.Cursor) -> Tuple[List[str], Dict[str, str]]:
-    """Return column names, types from pyodbc/SQLAnywhere"""
-    cursor_desc = cursor.description
-    column_names = [col[0] for col in cursor_desc]
-    column_types = {col[0]: map_col_type(col[1].__name__) for col in cursor_desc}
-    return column_names, column_types
 
 
 def standardize_df_columns(df: pd.DataFrame, column_types: Dict[str, str]):

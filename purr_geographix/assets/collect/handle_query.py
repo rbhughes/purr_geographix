@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 import pandas as pd
 import numpy as np
 import pyodbc
@@ -15,59 +15,18 @@ from purr_geographix.core.util import async_wrap, import_dict_from_file
 from purr_geographix.assets.collect.post_process import post_process
 from purr_geographix.assets.collect.xformer import (
     PURR_WHERE,
-    get_column_info,
     standardize_df_columns,
     transform_dataframe_to_json,
 )
 from purr_geographix.assets.collect.sql_helper import (
+    get_column_info,
     make_where_clause,
     create_selectors,
+    chunk_ids,
 )
-# from purr_geographix.core.logger import logger
+from purr_geographix.core.logger import logger
 
-
-def chunk_ids(ids, chunk):
-    """
-    [621, 826, 831, 834, 835, 838, 846, 847, 848]
-    ...with chunk=4...
-    [[621, 826, 831, 834], [835, 838, 846, 847], [848]]
-
-    ["1-62", "1-82", "2-83", "2-83", "2-83", "2-83", "2-84", "3-84", "4-84"]
-    ...with chunk=4...
-    [
-        ['1-62', '1-82'],
-        ['2-83', '2-83', '2-83', '2-83', '2-84'],
-        ['3-84', '4-84']
-    ]
-    Note how the group of 2's is kept together, even if it exceeds chunk=4
-
-    :param ids: This is usually a list of uwis. The ability to handle "compound"
-        ids : ['1-11', '1-22', '1-33', '2-22', '2-44'] is leftover from Petra.
-    :param chunk: The preferred batch size to process in a single query
-    :return: List of id lists
-    """
-    id_groups = {}
-
-    for item in ids:
-        left = str(item).split("-", maxsplit=1)[0]
-        if left not in id_groups:
-            id_groups[left] = []
-        id_groups[left].append(item)
-
-    result = []
-    current_subarray = []
-
-    for group in id_groups.values():
-        if len(current_subarray) + len(group) <= chunk:
-            current_subarray.extend(group)
-        else:
-            result.append(current_subarray)
-            current_subarray = group[:]
-
-    if current_subarray:
-        result.append(current_subarray)
-
-    return result
+##############################################################################
 
 
 def fetch_id_list(conn, id_sql):
@@ -80,9 +39,6 @@ def fetch_id_list(conn, id_sql):
         return []
 
 
-##############################################################################.
-
-
 def collect_and_assemble_docs(args: Dict[str, Any]):
     """todo"""
     conn_params = args["conn"]
@@ -90,47 +46,37 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
     out_file = args["out_file"]
     xforms = recipe["xforms"]
 
-    # control memory by the number of "ids" in the where clause of a selector
+    # control memory usage by the number of "ids" in the where clause
     chunk_size = recipe["chunk_size"] if "chunk_size" in recipe else 1000
 
     where = make_where_clause(args["uwi_list"])
 
     id_sql = recipe["identifier"].replace(PURR_WHERE, where)
 
-    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-    # print(id_sql)
-    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
+    logger.debug(id_sql)
 
     ids = fetch_id_list(conn_params, id_sql)
 
-    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-    # print(ids)
-    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
+    logger.debug(ids)
 
     chunked_ids = chunk_ids(ids, chunk_size)
 
     if len(chunked_ids) == 0:
-        return "no hits"
+        msg = "Query returned zero hits"
+        logger.info(msg)
+        return msg
 
     selectors = create_selectors(chunked_ids, recipe)
 
-    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-    # print(selectors)
-    # print("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-
     all_columns = set()
 
-    ######
     docs_written = 0
-    ######
 
     with open(out_file, "w", encoding="utf-8") as f:
         f.write("[")  # Start of JSON array
 
         for q in selectors:
-            # print("qqqqqqqqqqqqqqqqqqqqqqqqqqq")
-            # print(q)
-            # print("qqqqqqqqqqqqqqqqqqqqqqqqqqq")
+            logger.debug(q)
 
             # pylint: disable=c-extension-no-member
             with pyodbc.connect(**conn_params) as conn:
@@ -143,9 +89,8 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
                     [tuple(row) for row in cursor.fetchall()], columns=column_names
                 )
 
+                # useful for diagnostics:
                 # duplicates = df[df.duplicated(subset=["w_uwi"])]
-                # print("ddddddddddddddddddddddddddddd")
-                # print(duplicates)
 
                 df = standardize_df_columns(df, column_types)
 
@@ -167,15 +112,14 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
                     if postproc := recipe.get("post_process"):
                         post_processor = post_process[postproc]
                         if post_processor:
-                            print("post-processing", postproc)
+                            logger.info(f"post-processing: {postproc}")
                             df = post_processor(df)
 
                     # transform this chunk by table prefixes
                     json_data = transform_dataframe_to_json(df, recipe["prefixes"])
 
-                    print("==========================>", len(json_data))
+                    logger.info(f"assembled {len(json_data)} docs")
 
-                    # TODO: test efficiency vs memory (maybe just send it all)
                     for json_obj in json_data:
                         json_str = json.dumps(json_obj, default=str)
                         f.write(json_str + ",")
@@ -184,22 +128,21 @@ def collect_and_assemble_docs(args: Dict[str, Any]):
         f.seek(f.tell() - 1, 0)  # Remove the last comma
         f.write("]")
 
-    return {
-        "message": f"{docs_written} docs written",
-        "out_file": out_file,
-    }
+    end_msg = f"json docs written: {docs_written}"
+    logger.info(end_msg)
+    return {"message": end_msg, "out_file": out_file}
 
 
 async def selector(
-    repo_id: str, asset: str, export_file: str, uwi_list: str = None
+    repo_id: str, asset: str, export_file: str, uwi_list: str = List[str]
 ) -> str:
     """Main entry point to collect data from a GeoGraphix project
 
     Args:
-        repo_id (str): ID from a specific GeoGraphix project
-        asset (str): An asset (i.e. datatype) to query from a gxdb
+        repo_id (str): ID from a specific project
+        asset (str): An asset (i.e. datatype) to query from project database
         export_file (str): Export file name with timestamp
-        uwi_query (str): A SIMILAR TO clause based on UWI string(s).
+        uwi_list (str): List of UWI strings
 
     Returns:
         str: A summary of the selector job--probably from export_json()
@@ -232,16 +175,9 @@ async def selector(
     result = await async_collect_and_assemble_docs(collection_args)
 
     # print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    # # print(result)
-    # # print("-------------------------------------------------")
     # with open(result["out_file"], "r") as file:
     #     data = json.load(file)
     #     print(json.dumps(data, indent=2))
     # print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    # return result  # sent to logger
 
-    # # if len(records) > 0:
-    # #     async_export_json = async_wrap(export_json)
-    # #     return await async_export_json(records, export_file)
-    # # else:
-    # #     return "Query returned no results"
+    return result
