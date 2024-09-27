@@ -58,3 +58,5 @@ def start():
 if __name__ == "__main__":
     logger.info("Initializing purr_geographix API (dev)")
     uvicorn.run(app, host=purr_host, port=purr_port)
+
+# to run in dev, just do:   python -m purr_geographix.main
