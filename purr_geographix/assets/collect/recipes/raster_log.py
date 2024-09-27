@@ -110,7 +110,7 @@ recipe = {
     },
     "xforms": {
         "v_blob_data": "decode_depth_registration",
-        "v_blob_data_orig": "blob_to_hex",
+        # "v_blob_data_orig": "blob_to_hex",
     },
     "post_process": "raster_log_agg",
     "chunk_size": 1000,

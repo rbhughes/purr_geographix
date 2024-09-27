@@ -1,9 +1,12 @@
 # purr_geographix
 
-<div style="display: flex; height: 85px">
+<!-- <div style="display: flex; height: 85px">
     <img src="./docs/purrio.png" alt="drawing" height="85px" style="margin-right: 20px;"/>
     <img src="./docs/geographix.png" alt="drawing"/>
-</div>
+</div> -->
+
+| <img src="./docs/purrio.png" alt="purrio logo" height="100"/> | <img src="./docs/geographix.png" alt="purrio logo" width="200"/>
+|:--:|:--:|
 
 ---
 
@@ -52,9 +55,24 @@ database _server_ someplace. Contact me if you need help.
 or
 `poetry add purr_geographix`
 
+### prep
+
+INCLUDE ENV VARS
+INCLUDE VENV SETUP
+
+**purr_geographix** uses the [DU](https://learn.microsoft.com/en-us/sysinternals/downloads/du) utility for performance. You can initialize it (and tacitly accept its license agreement) by running this command ***as an Administrator***.
+
+_NOTE 1. You do not need to run **purr_geographix** as an admin, just this DU initializer since it writes the the registry._
+
+_NOTE 2. DU is registered for the current user in HKEY_CURRENT_USER, so you should run it as the user you intend to use for **purr_geographix**._
+
+1. Launch cmd prompt (right-click Command Prompt | Run as administrator)
+2. change directory to your python project (and activate the venv)
+3. enter this command: `prep-purr-geographix`
+
 ### launch:
 
-`uvicorn purr_geographix.main:app --workers 4`
+`start-purr-geographix`
 
 **purr_geographix** uses [FastAPI](https://fastapi.tiangolo.com "FastAPI").
 You can test-drive your local API at: `http://localhost:8000/docs` after install.

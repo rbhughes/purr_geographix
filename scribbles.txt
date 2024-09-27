@@ -13,6 +13,13 @@ perforation: 05057050660000
        zone: 05057050090002
 
 
+2024-09-26 | modules and initializers
+1. poetry build (will write .whl and tar.gz to ./dist)
+2. copy dist contents to test pc
+3. (on test pc) activate venv
+4. pip install d:\crap\purr_geographix-0.1.5-py3-none-any.whl
+
+
 2024-07-19 | poetry stuff
 https://www.digitalocean.com/community/tutorials/how-to-publish-python-packages-to-pypi-using-poetry-on-ubuntu-22-04
 

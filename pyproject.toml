@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "purr-geographix"
-version = "0.1.3"
+version = "0.1.5"
 description = "Python API to extract JSON data from GVerse GeoGraphix projects"
 authors = ["R. Bryan Hughes <bryan@purr.io>"]
 readme = "README.md"
@@ -26,12 +26,6 @@ build-backend = "poetry.core.masonry.api"
 ignore_missing_imports = true
 
 
-# could not get scripts to work without getting
-# ModuleNotFoundError: No module named 'uvicorn purr_geographix'
-# instead do this within module directory (assuming poetry)
-# poetry run uvicorn purr_geographix.main:app --reload
-
-#[tool.poetry.scripts]
-# start = "purr_geographix.main:run_dev"
-# start-prod = "purr_geographix.main:run_prod"
-# start-prod = "uvicorn purr_geographix.main:app --workers 4"
+[tool.poetry.scripts]
+prep-purr-geographix = "purr_geographix.main:prep"
+start-purr-geographix = "purr_geographix.main:start"
